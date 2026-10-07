@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金鯉躍門・營運分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#A82C1C;--accent-soft:#F3DCD6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#E2654F;--accent-soft:#3B1C16}}
+:root[data-theme="dark"]{--accent:#E2654F;--accent-soft:#3B1C16}
+.feat{display:grid;gap:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">金鯉躍門 · 第 5 章 · A/B 測試、迴歸、馬可夫鏈、貝氏分類</div>
+  <h1>營運分析：RTP 調低，真的比較賺嗎</h1>
+  <p class="lede">降低 RTP，每一轉的收入會變高，但玩家輸得更快、玩得更短、比較不會回來。這一章用 A/B 測試比較兩個數學版本，用迴歸找出影響遊玩時長的因素，用馬可夫鏈把留存率換算成玩家終身價值，最後用單純貝氏分類器抓出外掛帳號。</p>
+  <nav class="chapters" id="chapters" aria-label="金鯉躍門章節"></nav>
+  <div class="cfg-banner" id="cfg"></div>
+</header>
+
+<section id="ab">
+  <div class="sec-head">
+    <span class="spec">5-A · Welch t 檢定 · 雙比例 z 檢定</span>
+    <h2>數學版本 A/B 測試</h2>
+    <p>玩家隨機分到 A 版（第 1 章配置）或 B 版（整張賠率表等比例調低）。兩組用同一套玩家行為模型模擬：每轉有固定機率主動離開，大獎後較容易收手；七日回訪機率跟遊玩時長、是否贏錢、有沒有玩到免費遊戲有關。比較三個指標：遊玩轉數、每人營收、七日回訪率。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>實驗設定</h3>
+      <div class="field"><label for="ab-rtp">B 版 RTP %</label><input type="number" id="ab-rtp" value="93" min="80" max="99" step="0.5"></div>
+      <div class="field"><label for="ab-n">每組玩家數（約）</label><input type="number" id="ab-n" value="1500" min="200" max="5000" step="100"></div>
+      <div class="field"><label for="ab-cap">單次遊玩上限轉數</label><input type="number" id="ab-cap" value="500" min="50" max="2000" step="50"></div>
+      <div class="field"><label for="ab-a">顯著水準 α %</label><input type="number" id="ab-a" value="5" min="0.1" max="20" step="0.5"></div>
+      <div class="formula">每轉離開機率 0.3%，輸掉 4 成本金後 2%<br>回訪 logit = −0.6 + 0.0025·(轉數 − 200)<br>&nbsp;&nbsp;+ 1.5·(淨輸贏 ÷ 本金) + 0.4·[玩到免費遊戲]<br>&nbsp;&nbsp;+ 0.15·VIP 等級</div>
+      <p class="note">玩家行為模型為示範用假設，實務上要用真實上線資料估計。</p>
+      <button class="btn" id="ab-seed" type="button">換一組亂數重跑</button>
+      <div class="errors" id="ab-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="row"><span class="spec" id="ab-status">準備中…</span></div>
+      <div class="progress"><i id="ab-bar"></i></div>
+      <div class="verdict" id="ab-verdict"></div>
+      <div class="tbl-wrap">
+        <table aria-label="A/B 結果"><thead><tr><th>指標</th><th>A 版</th><th>B 版</th><th>差異（B − A）</th><th>檢定</th><th>p 值</th><th>判定</th></tr></thead><tbody id="ab-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reg">
+  <div class="sec-head">
+    <span class="spec">5-B · 多元迴歸 · VIF</span>
+    <h2>什麼因素影響遊玩時長</h2>
+    <p>用 A/B 實驗的玩家資料，對「遊玩轉數」做迴歸。版本是隨機分配的，所以它的係數可以解讀成因果效果；本金和 VIP 等級則高度相關（VIP 主要由儲值金額決定），兩個一起放會出現共線性。可以勾掉 VIP 看本金係數怎麼變。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>放進模型的變數</h3>
+      <div class="feat" id="rg-vars"></div>
+      <p class="note">「前 50 轉觸發免費遊戲」是遊玩初期就決定的變數，不會受遊玩時長反向影響。</p>
+    </div>
+    <div class="results">
+      <div class="stats three" id="rg-stats"></div>
+      <div class="tbl-wrap">
+        <table aria-label="迴歸係數"><thead><tr><th>變數</th><th>係數</th><th>標準誤</th><th>t</th><th>p 值</th><th>95% 信賴區間</th><th>VIF</th></tr></thead><tbody id="rg-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ltv">
+  <div class="sec-head">
+    <span class="spec">5-C · 吸收型馬可夫鏈 · 基本矩陣</span>
+    <h2>留存與玩家終身價值</h2>
+    <p>每週把玩家分成活躍、沉睡、流失三種狀態，流失是吸收狀態。「活躍 → 活躍」直接用 A/B 測得的七日回訪率，其餘轉移機率可以調整。基本矩陣 N = (I − Q)⁻¹ 給出玩家流失前平均活躍幾週，乘上每週營收就是終身價值（LTV）。這一步才回答「哪個版本比較賺」。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>其餘轉移機率（每週）</h3>
+      <div class="field"><label for="lt-ad">活躍未回訪時轉為沉睡<small>其餘直接流失</small></label><input type="number" id="lt-ad" value="0.6" min="0" max="1" step="0.05"></div>
+      <div class="field"><label for="lt-da">沉睡 → 活躍</label><input type="number" id="lt-da" value="0.2" min="0" max="1" step="0.05"></div>
+      <div class="field"><label for="lt-dd">沉睡 → 沉睡</label><input type="number" id="lt-dd" value="0.5" min="0" max="1" step="0.05"></div>
+      <p class="note">沉睡 → 流失 = 1 − 上面兩項。假設活躍玩家每週玩一次，每次營收等於 A/B 測得的每人營收。</p>
+      <div class="errors" id="lt-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="lt-verdict"></div>
+      <div class="stats" id="lt-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>同期玩家的活躍比例（26 週）</h3></div>
+        <div id="lt-chart"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>A 版</span><span><i style="background:var(--c1)"></i>B 版</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="bot">
+  <div class="sec-head">
+    <span class="spec">5-D · 伯努利單純貝氏</span>
+    <h2>外掛帳號偵測</h2>
+    <p>用五個行為特徵訓練單純貝氏分類器（70% 訓練、30% 測試）。重點是基本率：外掛只佔少數時，即使分類器本身很準，被標記的帳號裡也可能有一大半是一般玩家。這就是貝氏定理在實務上最常被忽略的地方。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>資料與門檻</h3>
+      <div class="field"><label for="bt-rate">外掛比例 %</label><input type="number" id="bt-rate" value="2" min="0.1" max="50" step="0.5"></div>
+      <div class="field"><label for="bt-n">帳號數</label><input type="number" id="bt-n" value="5000" min="500" max="50000" step="500"></div>
+      <div class="field"><label for="bt-th">判定門檻 %<small>後驗機率</small></label><input type="number" id="bt-th" value="50" min="1" max="99" step="5"></div>
+      <h3>檢查單一帳號</h3>
+      <div class="feat" id="bt-feats"></div>
+      <div class="errors" id="bt-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="bt-verdict"></div>
+      <div class="stats" id="bt-stats"></div>
+      <div class="two">
+        <div class="tbl-wrap">
+          <table aria-label="特徵條件機率"><thead><tr><th>特徵</th><th>P(特徵 | 一般)</th><th>P(特徵 | 外掛)</th><th>概似比</th></tr></thead><tbody id="bt-lik"></tbody></table>
+        </div>
+        <div class="tbl-wrap">
+          <table aria-label="基本率效應"><thead><tr><th>外掛比例</th><th>被標記帳號中真的是外掛</th><th>每標記 100 個誤判幾個</th></tr></thead><tbody id="bt-base"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">分析檢查</span><h2>分析前提檢查</h2>
+    <p>確認實驗分流、檢定條件、模型合法性與分類器評估方式都沒問題，再把結論交給營運決策。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>示範用虛構機台。玩家行為、回訪模型與外掛特徵皆為示範假設，數據由程式模擬生成，不代表任何實際營運數據。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script src="assets/slot-engine.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP,esc}=PF;
+let ST,A,MA,MB,tok=null,seed=77,PLAYERS=null,AB=null;const QA={};
+SLOT.nav($('chapters'),'slot-ops.html');
+function init(){ST=SLOT.load();A=SLOT.banner($('cfg'),ST,init);MA=SLOT.machine(ST.cfg);runAB();runBot();}
+const sig=x=>1/(1+Math.exp(-x));
+const welch=(a,b)=>{const m=x=>x.reduce((s,v)=>s+v,0)/x.length,v=(x,mu)=>x.reduce((s,y)=>s+(y-mu)**2,0)/(x.length-1);
+  const ma=m(a),mb=m(b),va=v(a,ma),vb=v(b,mb),se=Math.sqrt(va/a.length+vb/b.length),t=(mb-ma)/se;
+  const df=(va/a.length+vb/b.length)**2/((va/a.length)**2/(a.length-1)+(vb/b.length)**2/(b.length-1));return{ma,mb,t,df,p:PF.tP2(Math.abs(t),df),se};};
+
+/* ---------- 5-A ---------- */
+function runAB(){
+  if(tok)tok.cancel=true;
+  const rtpB=+$('ab-rtp').value/100,n=Math.round(+$('ab-n').value),cap=Math.round(+$('ab-cap').value),alpha=+$('ab-a').value/100;
+  const bad=[],msg=[];
+  if(!(rtpB>=0.8&&rtpB<=0.99)){bad.push('ab-rtp');msg.push('B 版 RTP 需介於 80% 到 99%。');}
+  if(!(n>=200&&n<=5000)){bad.push('ab-n');msg.push('每組玩家數需介於 200 到 5,000。');}
+  if(!(cap>=50&&cap<=2000)){bad.push('ab-cap');msg.push('上限轉數需介於 50 到 2,000。');}
+  if(!(alpha>=0.001&&alpha<=0.2)){bad.push('ab-a');msg.push('α 需介於 0.1% 到 20%。');}
+  PF.invalid(['ab-rtp','ab-n','ab-cap','ab-a'],bad);$('ab-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.ab=null;renderQA();return;}
+  MB=SLOT.machine(SLOT.scaled(ST.cfg,rtpB/A.total));
+  const r=PF.rng(seed),BANK=[300,500,1000,2000],total=2*n;PLAYERS=[];
+  tok=SLOT.chunked(total,30,()=>{
+    const v=r()<0.5?1:0,bank=BANK[Math.floor(r()*4)],lb=r()<0.7?1:2,bet=SLOT.BET*lb;
+    const vip=Math.max(0,Math.min(5,Math.round(Math.log2(bank/300)*1.2+0.6*PF.randn(r))));
+    const m=v?MB:MA;let c=bank,t=0,fg=false,earlyFG=0;
+    while(c>=bet&&t<cap){const g=m.play(r),w=g.win*lb;c+=w-bet;t++;if(g.trig){fg=true;if(t<=50)earlyFG=1;}
+      if(r()<(c<bank*0.6?0.02:0.003))break;if(w>=20*bet&&r()<0.05)break;}
+    const ret=r()<sig(-0.6+0.0025*(t-200)+1.5*(c-bank)/bank+0.4*(fg?1:0)+0.15*vip)?1:0;
+    PLAYERS.push({v,bank,lb,vip,spins:t,rev:bank-c,ret,earlyFG});
+  },p=>{$('ab-bar').style.width=(p*100).toFixed(1)+'%';$('ab-status').textContent=`模擬中 ${num(p*total)} / ${num(total)} 位玩家…`;},
+  ()=>{$('ab-status').textContent=`完成 ${num(total)} 位玩家，種子 ${seed}`;renderAB(rtpB,alpha);renderReg();renderLTV();});
+}
+function renderAB(rtpB,alpha){
+  const gA=PLAYERS.filter(p=>!p.v),gB=PLAYERS.filter(p=>p.v);
+  const sp=welch(gA.map(p=>p.spins),gB.map(p=>p.spins)),rv=welch(gA.map(p=>p.rev),gB.map(p=>p.rev));
+  const ra=gA.reduce((s,p)=>s+p.ret,0)/gA.length,rb=gB.reduce((s,p)=>s+p.ret,0)/gB.length,pp=(ra*gA.length+rb*gB.length)/PLAYERS.length;
+  const zr=(rb-ra)/Math.sqrt(pp*(1-pp)*(1/gA.length+1/gB.length)),pr=2*(1-PF.normCdf(Math.abs(zr)));
+  const rpsA=gA.reduce((s,p)=>s+p.rev,0)/gA.reduce((s,p)=>s+p.spins*SLOT.BET*p.lb,0),rpsB=gB.reduce((s,p)=>s+p.rev,0)/gB.reduce((s,p)=>s+p.spins*SLOT.BET*p.lb,0);
+  AB={nA:gA.length,nB:gB.length,sp,rv,ra,rb,zr,pr,alpha,rtpB,rpsA,rpsB};QA.ab=AB;
+  const row=(name,a,b,diff,test,p,good)=>`<tr><td>${name}</td><td class="mono">${a}</td><td class="mono">${b}</td><td class="mono">${diff}</td><td>${test}</td><td class="mono">${fmtP(p)}</td><td>${p<alpha?`<span class="pill ${good?'ok':'bad'}">顯著${good?'較好':'較差'}</span>`:'<span class="pill info">不顯著</span>'}</td></tr>`;
+  const sgn=v=>(v>=0?'+':'')+v;
+  $('ab-tbl').innerHTML=
+    `<tr><td>玩家數</td><td class="mono">${num(gA.length)}</td><td class="mono">${num(gB.length)}</td><td></td><td colspan="3" class="muted">隨機分配</td></tr>`+
+    `<tr><td>理論 RTP</td><td class="mono">${pct(A.total,2)}</td><td class="mono">${pct(rtpB,2)}</td><td class="mono">${sgn((( rtpB-A.total)*100).toFixed(2))}%</td><td colspan="3" class="muted">設計值</td></tr>`+
+    row('平均遊玩轉數',num(sp.ma,1),num(sp.mb,1),sgn(num(sp.mb-sp.ma,1)),'Welch t',sp.p,sp.mb>sp.ma)+
+    row('每人營收（點）',num(rv.ma,1),num(rv.mb,1),sgn(num(rv.mb-rv.ma,1)),'Welch t',rv.p,rv.mb>rv.ma)+
+    row('七日回訪率',pct(ra,1),pct(rb,1),((rb-ra)>=0?'+':'')+((rb-ra)*100).toFixed(1)+' 個百分點','雙比例 z',pr,rb>ra)+
+    `<tr><td>每轉實際營收率</td><td class="mono">${pct(rpsA,2)}</td><td class="mono">${pct(rpsB,2)}</td><td></td><td colspan="3" class="muted">營收 ÷ 總下注，應接近 1 − RTP</td></tr>`;
+  const desc=(name,d,p,unit)=>`${name}${d>=0?'較高':'較低'}（${d>=0?'+':''}${unit(d)}，p = ${fmtP(p)}${p<alpha?'，顯著':'，不顯著'}）`;
+  const tradeoff=rv.mb>rv.ma&&rb<ra;
+  $('ab-verdict').innerHTML=`<span class="pill info">需要看終身價值</span><span>B 版${desc('每人單次營收',rv.mb-rv.ma,rv.p,v=>num(v,1)+' 點')}；${desc('遊玩轉數',sp.mb-sp.ma,sp.p,v=>num(v,1)+' 轉')}；${desc('七日回訪率',rb-ra,pr,v=>(v*100).toFixed(1)+' 個百分點')}。${tradeoff?'單次營收變高、回訪率變低，兩者方向相反，':''}要把回訪率換算成終身價值才能判斷哪一版比較賺，見 5-C。</span>`;
+  renderQA();
+}
+
+/* ---------- 5-B ---------- */
+const RV=[{k:'bank',n:'本金（每 1,000 點）',f:p=>p.bank/1000},{k:'vip',n:'VIP 等級',f:p=>p.vip},{k:'lb',n:'每線押注',f:p=>p.lb},{k:'v',n:'B 版（虛擬變數）',f:p=>p.v},{k:'earlyFG',n:'前 50 轉觸發免費遊戲',f:p=>p.earlyFG}];
+$('rg-vars').innerHTML=RV.map(v=>`<label class="check"><input type="checkbox" id="rv-${v.k}" checked> ${v.n}</label>`).join('');
+function renderReg(){
+  if(!PLAYERS)return;const used=RV.filter(v=>$('rv-'+v.k).checked);
+  if(!used.length){$('rg-tbl').innerHTML='<tr><td colspan="7">至少選一個變數。</td></tr>';QA.rg=null;renderQA();return;}
+  const X=PLAYERS.map(p=>used.map(v=>v.f(p))),y=PLAYERS.map(p=>p.spins),fit=PF.ols(X,y);
+  if(!fit){$('rg-tbl').innerHTML='<tr><td colspan="7">設計矩陣奇異，無法估計。</td></tr>';QA.rg={singular:true};renderQA();return;}
+  const vif=used.map((v,j)=>{if(used.length<2)return 1;const f=PF.ols(PLAYERS.map(p=>used.filter((_,k)=>k!==j).map(u=>u.f(p))),PLAYERS.map(p=>v.f(p)));return f?1/Math.max(1e-12,1-f.r2):Infinity;});
+  const tc=PF.tCrit(fit.df,0.05);
+  $('rg-tbl').innerHTML=[{n:'截距',i:0},...used.map((v,j)=>({n:v.n,i:j+1,vif:vif[j]}))].map(r=>{const b=fit.beta[r.i],s=fit.se[r.i];
+    return `<tr><td>${r.n}</td><td class="mono">${b.toFixed(2)}</td><td class="mono">${s.toFixed(2)}</td><td class="mono">${fit.t[r.i].toFixed(2)}</td><td class="mono">${fmtP(fit.p[r.i])}</td><td class="mono">${(b-tc*s).toFixed(1)} ~ ${(b+tc*s).toFixed(1)}</td><td class="mono">${r.vif==null?'—':r.vif>=5?`<span class="pill ${r.vif>=10?'bad':'info'}">${r.vif.toFixed(1)}</span>`:r.vif.toFixed(2)}</td></tr>`;}).join('');
+  const c=(()=>{const a=PLAYERS.map(p=>p.bank),b=PLAYERS.map(p=>p.vip),n=a.length,ma=a.reduce((s,v)=>s+v,0)/n,mb=b.reduce((s,v)=>s+v,0)/n;let sab=0,sa=0,sb=0;for(let i=0;i<n;i++){sab+=(a[i]-ma)*(b[i]-mb);sa+=(a[i]-ma)**2;sb+=(b[i]-mb)**2;}return sab/Math.sqrt(sa*sb);})();
+  QA.rg={maxVif:Math.max(...vif),n:PLAYERS.length,p:used.length};
+  PF.tiles($('rg-stats'),[['R²',fit.r2.toFixed(3),'調整後 '+fit.adj.toFixed(3),'hl'],['本金與 VIP 相關',c.toFixed(3),'皮爾森相關係數',Math.abs(c)>0.8?'alert':''],['樣本數',num(PLAYERS.length),'殘差標準誤 '+num(fit.s,1)+' 轉']]);
+  renderQA();
+}
+
+/* ---------- 5-C ---------- */
+function renderLTV(){
+  if(!AB)return;
+  const ad=+$('lt-ad').value,da=+$('lt-da').value,dd=+$('lt-dd').value;const bad=[],msg=[];
+  [['lt-ad',ad],['lt-da',da],['lt-dd',dd]].forEach(([id,v])=>{if(!(v>=0&&v<=1))bad.push(id);});
+  if(bad.length)msg.push('轉移機率需介於 0 和 1。');
+  if(da+dd>1+1e-9){bad.push('lt-da','lt-dd');msg.push('沉睡 → 活躍與沉睡 → 沉睡的加總不能超過 1。');}
+  if(da+dd>=1-1e-9&&ad>0&&!msg.length)msg.push('沉睡玩家永遠不會流失，終身價值會是無限大；請讓沉睡 → 流失大於 0。');
+  PF.invalid(['lt-ad','lt-da','lt-dd'],bad);$('lt-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(msg.length){QA.lt=null;renderQA();return;}
+  const calc=(ret,rev)=>{const Q=[[ret,(1-ret)*ad],[da,dd]];const N=PF.inv([[1-Q[0][0],-Q[0][1]],[-Q[1][0],1-Q[1][1]]]);
+    if(!N)return null;const weeks=N[0][0],dorm=N[0][1];let v=[1,0];const curve=[[0,1]];
+    for(let w=1;w<=26;w++){v=[v[0]*Q[0][0]+v[1]*Q[1][0],v[0]*Q[0][1]+v[1]*Q[1][1]];curve.push([w,v[0]]);}
+    const rows=[[ret,(1-ret)*ad,(1-ret)*(1-ad)],[da,dd,1-da-dd]];return{weeks,dorm,ltv:weeks*rev,curve,rows};};
+  const a=calc(AB.ra,AB.rv.ma),b=calc(AB.rb,AB.rv.mb);
+  if(!a||!b){$('lt-err').textContent='矩陣無法反轉，請調整轉移機率。';QA.lt=null;renderQA();return;}
+  QA.lt={a,b};
+  const win=a.ltv>=b.ltv?'A':'B',diff=Math.abs(a.ltv-b.ltv)/Math.min(a.ltv,b.ltv);
+  $('lt-verdict').innerHTML=`<span class="pill ${win==='A'?'ok':'info'}">${win} 版終身價值較高</span><span>A 版每位玩家流失前平均活躍 ${a.weeks.toFixed(2)} 週，LTV ${num(a.ltv,0)} 點；B 版 ${b.weeks.toFixed(2)} 週，LTV ${num(b.ltv,0)} 點，${win} 版高 ${pct(diff,1)}。${win==='A'?'B 版單次營收較高，但回訪率下降抵銷了收益。':AB.rb<AB.ra?'B 版單次營收的增加，足以彌補回訪率下降。':'B 版回訪率沒有下降，單次營收又較高。'}${AB.rv.p>=AB.alpha||AB.pr>=AB.alpha?`<b>但要注意：</b>A/B 測得的${AB.rv.p>=AB.alpha?'營收差異':''}${AB.rv.p>=AB.alpha&&AB.pr>=AB.alpha?'和':''}${AB.pr>=AB.alpha?'回訪率差異':''}並不顯著，老虎機單次輸贏的變異很大，這個 LTV 差距可能只是抽樣波動，正式決策前需要擴大樣本或拉長實驗期間。`:''}這個結論也對「活躍 → 沉睡」等假設很敏感，可以調整左邊的參數試試。</span>`;
+  PF.tiles($('lt-stats'),[['A 版 LTV',num(a.ltv,0)+' 點','活躍 '+a.weeks.toFixed(2)+' 週 × 每週 '+num(AB.rv.ma,0),win==='A'?'good':''],['B 版 LTV',num(b.ltv,0)+' 點','活躍 '+b.weeks.toFixed(2)+' 週 × 每週 '+num(AB.rv.mb,0),win==='B'?'good':''],
+    ['A 版平均沉睡週數',a.dorm.toFixed(2),'基本矩陣 N[活躍, 沉睡]'],['B 版平均沉睡週數',b.dorm.toFixed(2),'']]);
+  PF.chart($('lt-chart'),{label:'同期活躍比例',x0:0,x1:26,y0:0,y1:1,yStep:0.25,yFmt:v=>Math.round(v*100)+'%',xStep:4,
+    series:[{kind:'line',pts:a.curve,stroke:'var(--accent)'},{kind:'line',pts:b.curve,stroke:'var(--c1)'}]});
+  renderQA();
+}
+
+/* ---------- 5-D ---------- */
+const FEATS=[{n:'押注金額從未改變',h:0.25,b:0.95},{n:'轉動間隔非常規律',h:0.03,b:0.85},{n:'單日遊玩超過 12 小時',h:0.05,b:0.70},{n:'只在凌晨 2–6 點上線',h:0.10,b:0.40},{n:'從未儲值但高頻遊玩',h:0.20,b:0.60}];
+$('bt-feats').innerHTML=FEATS.map((f,i)=>`<label class="check"><input type="checkbox" id="bf-${i}" ${i<3?'checked':''}> ${f.n}</label>`).join('');
+let BT=null;
+function runBot(){
+  const rate=+$('bt-rate').value/100,n=Math.round(+$('bt-n').value),th=+$('bt-th').value/100;const bad=[],msg=[];
+  if(!(rate>=0.001&&rate<=0.5)){bad.push('bt-rate');msg.push('外掛比例需介於 0.1% 到 50%。');}
+  if(!(n>=500&&n<=50000)){bad.push('bt-n');msg.push('帳號數需介於 500 到 50,000。');}
+  if(!(th>=0.01&&th<=0.99)){bad.push('bt-th');msg.push('判定門檻需介於 1% 到 99%。');}
+  PF.invalid(['bt-rate','bt-n','bt-th'],bad);$('bt-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.bt=null;renderQA();return;}
+  const r=PF.rng(seed+3),data=[];for(let i=0;i<n;i++){const y=r()<rate?1:0;data.push({y,x:FEATS.map(f=>r()<(y?f.b:f.h)?1:0)});}
+  const cut=Math.floor(n*0.7),tr=data.slice(0,cut),te=data.slice(cut);
+  const ny=[0,0],cnt=[FEATS.map(()=>0),FEATS.map(()=>0)];tr.forEach(d=>{ny[d.y]++;d.x.forEach((v,j)=>cnt[d.y][j]+=v);});
+  if(!ny[1]){$('bt-err').textContent='訓練資料中沒有外掛帳號，請提高外掛比例或帳號數。';QA.bt=null;renderQA();return;}
+  const lik=[0,1].map(c=>cnt[c].map(k=>(k+1)/(ny[c]+2))),prior=(ny[1]+1)/(tr.length+2);
+  const post=x=>{let l1=Math.log(prior),l0=Math.log(1-prior);x.forEach((v,j)=>{l1+=Math.log(v?lik[1][j]:1-lik[1][j]);l0+=Math.log(v?lik[0][j]:1-lik[0][j]);});const m=Math.max(l0,l1);return Math.exp(l1-m)/(Math.exp(l0-m)+Math.exp(l1-m));};
+  let tp=0,fp=0,tn=0,fn=0;te.forEach(d=>{const p=post(d.x)>=th?1:0;if(p&&d.y)tp++;else if(p)fp++;else if(d.y)fn++;else tn++;});
+  const rec=tp/Math.max(1,tp+fn),fpr=fp/Math.max(1,fp+tn),prec=tp/Math.max(1,tp+fp);
+  BT={lik,prior,post,rec,fpr,prec,tp,fp,tn,fn,te:te.length,rate};QA.bt=BT;
+  PF.tiles($('bt-stats'),[['召回率',pct(rec,1),'抓到的外掛 / 全部外掛','hl'],['精確率',pct(prec,1),'標記帳號中真的是外掛',prec<0.5?'alert':'good'],['偽陽性率',pct(fpr,2),'一般玩家被誤判'],['測試集',num(te.length),`TP ${tp} · FP ${fp} · FN ${fn}`]]);
+  $('bt-lik').innerHTML=FEATS.map((f,j)=>`<tr><td>${f.n}</td><td class="mono">${pct(lik[0][j],1)}</td><td class="mono">${pct(lik[1][j],1)}</td><td class="mono">${(lik[1][j]/lik[0][j]).toFixed(1)}×</td></tr>`).join('');
+  $('bt-base').innerHTML=[0.005,0.01,0.02,0.05,0.1,0.25].map(pi=>{const p=rec*pi/(rec*pi+fpr*(1-pi)||1);return `<tr><td class="mono">${pct(pi,1)}${Math.abs(pi-rate)<1e-9?' <span class="pill info">目前</span>':''}</td><td class="mono">${pct(p,1)}</td><td class="mono">${num(100*(1-p),0)}</td></tr>`;}).join('');
+  renderAccount();renderQA();
+}
+function renderAccount(){
+  if(!BT)return;const x=FEATS.map((_,i)=>$('bf-'+i).checked?1:0),p=BT.post(x),th=+$('bt-th').value/100;
+  $('bt-verdict').innerHTML=`<span class="pill ${p>=th?'bad':'ok'}">${p>=th?'標記為外掛':'一般玩家'}</span><span>勾選的 ${x.reduce((a,b)=>a+b,0)} 個特徵下，P(外掛 | 特徵) = <b class="mono">${pct(p,2)}</b>。先驗（外掛比例）只有 ${pct(BT.prior,1)}，所以需要好幾個強烈特徵同時出現，後驗機率才會超過門檻。</span>`;
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.ab){const a=QA.ab,e=(a.nA+a.nB)/2,chi=(a.nA-e)**2/e+(a.nB-e)**2/e,ps=PF.chi2Sf(chi,1);
+    rows.push(['O-SRM','分流比例檢查（預期 50/50）',`A ${a.nA} / B ${a.nB}，p = ${fmtP(ps)}`,ps>=0.001?'ok':'bad']);
+    rows.push(['O-N','每組樣本數 ≥ 30（t 檢定可用常態近似）',`最小組 ${Math.min(a.nA,a.nB)}`,Math.min(a.nA,a.nB)>=30?'ok':'bad']);
+    rows.push(['O-RTP','實際營收率 ≈ 1 − 理論 RTP（模擬正確性）',`A ${pct(a.rpsA,2)} vs ${pct(1-A.total,2)}；B ${pct(a.rpsB,2)} vs ${pct(1-a.rtpB,2)}`,Math.abs(a.rpsA-(1-A.total))<0.03&&Math.abs(a.rpsB-(1-a.rtpB))<0.03?'ok':'info']);}
+  if(QA.rg&&!QA.rg.singular)rows.push(['O-VIF','迴歸共線性：所有 VIF < 10','最大 VIF '+QA.rg.maxVif.toFixed(2),QA.rg.maxVif<10?(QA.rg.maxVif<5?'ok':'info'):'bad']);
+  if(QA.lt){const ok=[QA.lt.a,QA.lt.b].every(x=>x.rows.every(r=>r.every(v=>v>=-1e-12)&&Math.abs(r.reduce((s,v)=>s+v,0)-1)<1e-9));
+    rows.push(['O-MC','留存轉移矩陣每列和 = 1、元素非負',ok?'兩個版本都通過':'有列不合法',ok?'ok':'bad']);}
+  if(QA.bt){rows.push(['O-NB','分類器在獨立測試集上評估（不使用訓練資料）',`訓練 70% / 測試 ${num(QA.bt.te)} 筆`,'ok']);
+    rows.push(['O-BASE','精確率受基本率影響（提示）',`外掛比例 ${pct(QA.bt.rate,1)} 時精確率 ${pct(QA.bt.prec,1)}`,QA.bt.prec>=0.5?'ok':'info']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+const dA=PF.debounce(runAB,500),dL=PF.debounce(renderLTV,200),dB=PF.debounce(runBot,250);
+['ab-rtp','ab-n','ab-cap','ab-a'].forEach(id=>$(id).addEventListener('input',dA));
+RV.forEach(v=>$('rv-'+v.k).addEventListener('input',renderReg));
+['lt-ad','lt-da','lt-dd'].forEach(id=>$(id).addEventListener('input',dL));
+['bt-rate','bt-n','bt-th'].forEach(id=>$(id).addEventListener('input',dB));
+FEATS.forEach((_,i)=>$('bf-'+i).addEventListener('input',renderAccount));
+$('ab-seed').addEventListener('click',()=>{seed++;runAB();});
+init();
+})();
+</script>
+</body>
+</html>

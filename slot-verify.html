@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金鯉躍門・驗證</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#A82C1C;--accent-soft:#F3DCD6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#E2654F;--accent-soft:#3B1C16}}
+:root[data-theme="dark"]{--accent:#E2654F;--accent-soft:#3B1C16}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">金鯉躍門 · 第 2 章 · 機率分布與檢定</div>
+  <h1>驗證：送審前的三道關卡</h1>
+  <p class="lede">PAR 表算出的 RTP 只是理論值。送到認證實驗室前要回答三個問題：亂數產生器（RNG）選出的停點真的均勻嗎？模擬要跑幾轉，才能把 RTP 確認到要求的精度？免費遊戲的場次分布長什麼樣子，最壞會連續玩多久？</p>
+  <nav class="chapters" id="chapters" aria-label="金鯉躍門章節"></nav>
+  <div class="cfg-banner" id="cfg"></div>
+</header>
+
+<section id="rng">
+  <div class="sec-head">
+    <span class="spec">2-A · 卡方配適度檢定 · 序列相關檢定</span>
+    <h2>RNG 停點均勻性</h2>
+    <p>每一軸的停點都應該等機率出現。對每軸做卡方配適度檢定（自由度 = 停點數 − 1），再檢查「連續兩轉停在同一格」的比例是否等於 1/L，抓出前後相關的 RNG。可以切換成兩種有缺陷的 RNG，看檢定能不能抓到。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>測試設定</h3>
+      <div class="field"><label for="rv-rng">亂數產生器</label>
+        <select id="rv-rng"><option value="good">正確：u × L 取整</option><option value="mod">缺陷：8 位元整數取餘數</option><option value="corr">缺陷：5% 機率重複上一格</option></select></div>
+      <div class="field"><label for="rv-n">測試轉數</label><input type="number" id="rv-n" value="200000" min="10000" max="2000000" step="50000"></div>
+      <div class="field"><label for="rv-a">顯著水準 α %</label><input type="number" id="rv-a" value="1" min="0.1" max="10" step="0.5"></div>
+      <button class="btn" id="rv-seed" type="button">換一組亂數重測</button>
+      <div class="formula">χ² = Σ (Oᵢ − E)² / E，E = n / L<br>重複率期望 = 1 / L</div>
+      <p class="note">取餘數的缺陷：0–255 的整數除以 L 取餘數時，前 256 mod L 個停點會多出現一次機會，這是實務上很常見的 RNG 映射錯誤。</p>
+      <div class="errors" id="rv-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="rv-verdict"></div>
+      <div class="tbl-wrap">
+        <table aria-label="各軸檢定結果"><thead><tr><th>輪軸</th><th>停點數 L</th><th>χ²</th><th>自由度</th><th>p 值</th><th>連續重複率</th><th>期望</th><th>z</th><th>判定</th></tr></thead><tbody id="rv-tbl"></tbody></table>
+      </div>
+      <div class="box">
+        <div class="cap"><h3>第 1 軸各停點出現次數的相對偏差</h3><span class="note">虛線為 ±3 個標準差</span></div>
+        <div id="rv-chart"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="conv">
+  <div class="sec-head">
+    <span class="spec">2-B · 中央極限定理 · 樣本數規劃</span>
+    <h2>要模擬幾轉才能確認 RTP</h2>
+    <p>單局贏分的標準差 σ 決定了模擬誤差。n 轉後 RTP 估計值的 95% 誤差範圍是 ±1.96σ/√n，所以要把誤差縮小一半，轉數要變成 4 倍。下圖在三種轉數下各跑 20 次獨立模擬，點的分散程度應該剛好落在理論的漏斗形範圍內。</p>
+  </div>
+  <div class="results">
+    <div class="row"><span class="spec" id="cv-status">準備中…</span><button class="btn" id="cv-seed" type="button">換一組亂數重跑</button></div>
+    <div class="progress"><i id="cv-bar"></i></div>
+    <div class="stats" id="cv-stats"></div>
+    <div class="two">
+      <div class="box">
+        <div class="cap"><h3>獨立模擬的 RTP 估計值 vs 轉數（對數刻度）</h3></div>
+        <div id="cv-chart"></div>
+        <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>每次模擬的 RTP</span><span><i style="background:var(--muted)"></i>理論 RTP ± 1.96σ/√n</span></div>
+      </div>
+      <div class="tbl-wrap">
+        <table aria-label="所需轉數"><thead><tr><th>要求精度（95%）</th><th>所需轉數</th><th>每秒 100 萬轉需時</th></tr></thead><tbody id="cv-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="fg">
+  <div class="sec-head">
+    <span class="spec">2-C · 吸收型馬可夫鏈</span>
+    <h2>免費遊戲場次：吸收型馬可夫鏈</h2>
+    <p>把「剩餘免費場次」當成狀態：每轉一次剩餘場次減 1，若再觸發則加 F。剩餘 0 是吸收狀態。用狀態轉移逐步推導，可以得到總場次的完整分布，不只是平均值。平均值再用基本矩陣 N = (I − Q)⁻¹ 和封閉公式各算一次，三種方法應該一致。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>鏈的參數（來自第 1 章配置）</h3>
+      <div class="formula" id="fg-param"></div>
+      <div class="formula">狀態 r → r − 1 + F　機率 p<br>狀態 r → r − 1　　　機率 1 − p<br>E[T] = F / (1 − F·p)</div>
+    </div>
+    <div class="results">
+      <div class="stats" id="fg-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>一次觸發後的總免費場次分布</h3></div>
+        <div id="fg-chart"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">送審檢查</span><h2>驗證結果彙整</h2>
+    <p>彙整成交給認證實驗室的摘要。RNG 若選用有缺陷的版本，這裡應該要亮紅燈。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>示範用虛構機台。所有檢定與模擬都在瀏覽器內以手寫函數執行，使用可重現的 mulberry32 亂數產生器。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script src="assets/slot-engine.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP}=PF;
+const QA={};let ST,A,M;
+SLOT.nav($('chapters'),'slot-verify.html');
+function init(){ST=SLOT.load();A=SLOT.banner($('cfg'),ST,init);M=SLOT.machine(ST.cfg);runRNG();runConv();runFG();}
+
+/* ---------- 2-A RNG ---------- */
+let rvSeed=101;
+function runRNG(){
+  const kind=$('rv-rng').value,n=Math.round(+$('rv-n').value),alpha=+$('rv-a').value/100;
+  const bad=[],msg=[];
+  if(!(n>=10000&&n<=2000000)){bad.push('rv-n');msg.push('測試轉數需介於 10,000 到 2,000,000。');}
+  if(!(alpha>=0.001&&alpha<=0.1)){bad.push('rv-a');msg.push('α 需介於 0.1% 到 10%。');}
+  PF.invalid(['rv-n','rv-a'],bad);$('rv-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.rng=null;renderQA();return;}
+  const L=ST.cfg.L,r=PF.rng(rvSeed),rows=[];let anyFail=false,firstCounts=null;
+  for(let reel=0;reel<5;reel++){
+    const l=L[reel],cnt=new Array(l).fill(0);let prev=-1,rep=0;
+    for(let i=0;i<n;i++){let s;
+      if(kind==='mod')s=Math.floor(r()*256)%l;
+      else if(kind==='corr'&&prev>=0&&r()<0.05)s=prev;
+      else s=Math.floor(r()*l);
+      cnt[s]++;if(s===prev)rep++;prev=s;}
+    const e=n/l;let chi=0;cnt.forEach(o=>chi+=(o-e)**2/e);
+    const p=PF.chi2Sf(chi,l-1),rr=rep/(n-1),re=1/l,z=(rr-re)/Math.sqrt(re*(1-re)/(n-1)),pz=2*(1-PF.normCdf(Math.abs(z)));
+    const ok=p>=alpha&&pz>=alpha;if(!ok)anyFail=true;
+    rows.push({reel,l,chi,p,rr,re,z,pz,ok});if(reel===0)firstCounts={cnt,e,l};
+  }
+  QA.rng={rows,anyFail,kind,alpha};
+  $('rv-verdict').innerHTML=anyFail?`<span class="pill bad">未通過</span><span>至少一軸在 α = ${pct(alpha,1)} 下拒絕「停點均勻且彼此獨立」的假設。這個 RNG 不能送審。</span>`
+    :`<span class="pill ok">通過</span><span>五軸都沒有拒絕均勻性與獨立性假設（α = ${pct(alpha,1)}）。注意：通過檢定不代表證明 RNG 完美，只代表在這個樣本量下找不到偏差的證據。</span>`;
+  $('rv-tbl').innerHTML=rows.map(x=>`<tr><td>第 ${x.reel+1} 軸</td><td class="mono">${x.l}</td><td class="mono">${x.chi.toFixed(1)}</td><td class="mono">${x.l-1}</td><td class="mono">${fmtP(x.p)}</td><td class="mono">${pct(x.rr,3)}</td><td class="mono">${pct(x.re,3)}</td><td class="mono">${x.z.toFixed(2)}</td><td><span class="pill ${x.ok?'ok':'bad'}">${x.ok?'通過':'未通過'}</span></td></tr>`).join('');
+  const {cnt,e,l}=firstCounts,sd=Math.sqrt(e*(1-1/l))/e;
+  const pts=cnt.map((o,i)=>[i,o/e-1]);const ym=Math.max(4*sd,...pts.map(p=>Math.abs(p[1])))*1.1;
+  PF.chart($('rv-chart'),{label:'第 1 軸停點偏差',x0:-0.6,x1:l-0.4,y0:-ym,y1:ym,yFmt:v=>(v>=0?'+':'')+(v*100).toFixed(1)+'%',xStep:5,
+    series:[{kind:'bar',pts,color:(x,y)=>Math.abs(y)>3*sd?'var(--bad)':'var(--accent)',op:0.8,width:0.7}],
+    hmarks:[{y:3*sd,color:'var(--muted)',label:'+3σ'},{y:-3*sd,color:'var(--muted)',label:'−3σ'}]});
+  renderQA();
+}
+
+/* ---------- 2-B 收斂 ---------- */
+let cvSeed=7,cvTok=null;
+function runConv(){
+  if(cvTok)cvTok.cancel=true;
+  const sizes=[1000,10000,50000],reps=20,jobs=[];sizes.forEach(n=>{for(let k=0;k<reps;k++)jobs.push(n);});
+  const total=jobs.reduce((a,b)=>a+b,0),r=PF.rng(cvSeed);
+  let sum=0,sum2=0,cnt=0,trig=0,fgs=0;const est=[];let ji=0,jn=0,jsum=0;
+  cvTok=SLOT.chunked(total,40000,()=>{const g=M.play(r),m=g.win/SLOT.BET;sum+=m;sum2+=m*m;cnt++;trig+=g.trig?1:0;fgs+=g.fgSpins;jsum+=m;jn++;
+      if(jn===jobs[ji]){est.push([jobs[ji],jsum/jn]);ji++;jn=0;jsum=0;}},
+    p=>{$('cv-bar').style.width=(p*100).toFixed(1)+'%';$('cv-status').textContent=`模擬中 ${num(p*total)} / ${num(total)} 局…`;},
+    ()=>{
+      const mean=sum/cnt,sd=Math.sqrt(sum2/cnt-mean*mean);QA.cv={sd,mean,cnt,est,fgMean:trig?fgs/trig:0,trig};
+      $('cv-status').textContent=`完成 ${num(cnt)} 局，種子 ${cvSeed}`;
+      PF.tiles($('cv-stats'),[['單局標準差 σ',sd.toFixed(3),'× 總押注，'+num(cnt)+' 局估計','hl'],['合併模擬 RTP',pct(mean,2),'理論 '+pct(A.total,2)],
+        ['1 萬轉的誤差範圍','± '+pct(1.96*sd/Math.sqrt(1e4),2),'95% 信賴'],['100 萬轉的誤差範圍','± '+pct(1.96*sd/Math.sqrt(1e6),3),'95% 信賴']]);
+      const band=[],lo=[];for(let l=2.8;l<=4.9;l+=0.05){const h=1.96*sd/Math.sqrt(Math.pow(10,l));band.push([l,A.total+h]);lo.push([l,A.total-h]);}
+      const pts=est.map(([n,v],i)=>[Math.log10(n)+((i%reps)-reps/2)*0.006,v]);
+      const ys=[...pts.map(p=>p[1]),...lo.map(p=>p[1]),...band.map(p=>p[1])];
+      PF.chart($('cv-chart'),{label:'模擬收斂漏斗',x0:2.8,x1:4.9,y0:Math.min(...ys)-0.02,y1:Math.max(...ys)+0.02,yFmt:v=>Math.round(v*100)+'%',
+        xTicks:[{v:3,l:'1,000'},{v:4,l:'10,000'},{v:Math.log10(50000),l:'50,000'}],
+        series:[{kind:'line',pts:band,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'line',pts:lo,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'dots',pts,color:'var(--accent)',r:3,op:0.75}],
+        hmarks:[{y:A.total,color:'var(--ink)',label:'理論 '+pct(A.total,2)}]});
+      $('cv-tbl').innerHTML=[0.01,0.005,0.002,0.001,0.0005].map(eps=>{const N=Math.ceil((1.96*sd/eps)**2),sec=N/1e6;
+        return `<tr><td class="mono">± ${pct(eps,2)}</td><td class="mono">${num(N)}</td><td class="mono">${sec<60?num(sec,1)+' 秒':sec<3600?num(sec/60,1)+' 分':num(sec/3600,1)+' 小時'}</td></tr>`;}).join('');
+      runFG();renderQA();
+    });
+}
+
+/* ---------- 2-C 吸收型馬可夫鏈 ---------- */
+function runFG(){
+  const F=ST.cfg.fs,p=A.pt;
+  $('fg-param').innerHTML=`F = 每次觸發 ${F} 場<br>p = 單轉觸發機率 ${p.toFixed(5)}（1 / ${num(1/p,1)}）<br>F × p = ${(F*p).toFixed(4)}${F*p<1?' &lt; 1，會收斂':' ≥ 1，不會收斂'}`;
+  if(F*p>=1){QA.fg=null;$('fg-stats').innerHTML='';$('fg-chart').innerHTML='<p class="note">F × p ≥ 1，免費遊戲期望場次為無限大，請回第 1 章調整。</p>';renderQA();return;}
+  // 逐步推導：dist[r] 為剩餘 r 場的機率
+  const cap=F*40;let dist=new Float64Array(cap+F+1);dist[F]=1;const absorb=[];let mass=0;
+  for(let t=1;t<=cap&&mass<1-1e-12;t++){const nd=new Float64Array(cap+F+1);
+    for(let r=1;r<=cap;r++){const v=dist[r];if(!v)continue;nd[r-1]+=v*(1-p);nd[Math.min(cap,r-1+F)]+=v*p;}
+    absorb[t]=nd[0];mass+=nd[0];nd[0]=0;dist=nd;}
+  let mDP=0;absorb.forEach((v,t)=>{if(v)mDP+=t*v;});
+  // 基本矩陣（截斷在 R 個暫態）
+  const R=Math.min(120,F*12),Q=Array.from({length:R},()=>new Array(R).fill(0));
+  for(let r=1;r<=R;r++){if(r-1>=1)Q[r-1][r-2]+=1-p;const up=Math.min(R,r-1+F);Q[r-1][up-1]+=p;}
+  const IQ=Q.map((row,i)=>row.map((v,j)=>(i===j?1:0)-v)),N=PF.inv(IQ);const mN=N?N[F-1].reduce((a,b)=>a+b,0):NaN;
+  const mClosed=F/(1-F*p),pRe=1-Math.pow(1-p,F);
+  let p30=0;absorb.forEach((v,t)=>{if(t>=3*F)p30+=v;});
+  QA.fg={mDP,mN,mClosed,mass};
+  PF.tiles($('fg-stats'),[['期望總場次',mClosed.toFixed(4),'封閉公式','hl'],['逐步推導',mDP.toFixed(4),'機率總和 '+mass.toFixed(10)],['基本矩陣 (I − Q)⁻¹',isFinite(mN)?mN.toFixed(4):'—','截斷於 '+R+' 個暫態'],
+    ['至少再觸發一次',pct(pRe,2),'玩到 ≥ '+3*F+' 場：'+pct(p30,3)]]);
+  const pts=[];for(let k=1;k<=7;k++){const t=k*F;pts.push([k,absorb[t]||0]);}
+  PF.chart($('fg-chart'),{label:'免費場次分布',x0:0.4,x1:7.6,y0:0,y1:Math.max(...pts.map(p=>p[1]))*1.15,yFmt:v=>Math.round(v*100)+'%',
+    xTicks:pts.map(p=>({v:p[0],l:p[0]*F+' 場'})),
+    series:[{kind:'bar',pts,color:'var(--accent)',op:0.8,width:0.6}]});
+  renderQA();
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.rng){const x=QA.rng;const worst=x.rows.reduce((a,b)=>Math.min(a,b.p,b.pz),1);
+    rows.push(['V-RNG','RNG 停點均勻且無序列相關（五軸）',`最小 p 值 ${fmtP(worst)}，α = ${pct(x.alpha,1)}`,x.anyFail?'bad':'ok']);}
+  if(QA.cv){const c=QA.cv,se=c.sd/Math.sqrt(c.cnt),z=(c.mean-A.total)/se;
+    rows.push(['V-RTP','模擬 RTP 落在理論值 ±3 標準誤內',`${pct(c.mean,2)} vs ${pct(A.total,2)}，z = ${z.toFixed(2)}`,Math.abs(z)<=3?'ok':'bad']);
+    const inside=c.est.filter(([n,v])=>Math.abs(v-A.total)<=1.96*c.sd/Math.sqrt(n)).length/c.est.length;
+    rows.push(['V-FUN','約 95% 的獨立模擬落在漏斗範圍內',`實際 ${pct(inside,0)}（${c.est.length} 次）`,inside>=0.85?'ok':'info']);
+    if(c.trig)rows.push(['V-FGSIM','模擬的平均免費場次與馬可夫鏈一致',`模擬 ${c.fgMean.toFixed(2)}，理論 ${A.E.toFixed(2)}`,Math.abs(c.fgMean-A.E)/A.E<0.05?'ok':'info']);}
+  if(QA.fg){const f=QA.fg;
+    rows.push(['V-MC','三種方法算出的期望場次一致',`封閉 ${f.mClosed.toFixed(4)} / 推導 ${f.mDP.toFixed(4)} / 矩陣 ${isFinite(f.mN)?f.mN.toFixed(4):'—'}`,Math.abs(f.mDP-f.mClosed)<1e-3&&Math.abs(f.mN-f.mClosed)<1e-2?'ok':'bad']);
+    rows.push(['V-ABS','吸收機率總和 = 1（免費遊戲必定結束）','Σ = '+f.mass.toFixed(10),Math.abs(f.mass-1)<1e-8?'ok':'bad']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+
+const dR=PF.debounce(runRNG,300);
+['rv-rng','rv-n','rv-a'].forEach(id=>$(id).addEventListener('input',dR));
+$('rv-seed').addEventListener('click',()=>{rvSeed++;runRNG();});
+$('cv-seed').addEventListener('click',()=>{cvSeed++;runConv();});
+init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金鯉躍門・上線監控</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#A82C1C;--accent-soft:#F3DCD6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#E2654F;--accent-soft:#3B1C16}}
+:root[data-theme="dark"]{--accent:#E2654F;--accent-soft:#3B1C16}
+.report{max-height:420px;overflow:auto}
+.report thead th{position:sticky;top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">金鯉躍門 · 第 4 章 · 假設檢定與例行報表</div>
+  <h1>上線監控：實際 RTP 偏了，要不要報警</h1>
+  <p class="lede">機台上線後，每天都會有一份營運報表。實際 RTP 一定會上下跳，真正的問題是：今天的偏差是正常波動，還是設定出錯？這一章模擬 30 天的營運資料，比較「固定區間」和「依轉數調整的 z 檢定」兩種警示規則，並說明為什麼每天檢查一次會累積誤報。</p>
+  <nav class="chapters" id="chapters" aria-label="金鯉躍門章節"></nav>
+  <div class="cfg-banner" id="cfg"></div>
+</header>
+
+<section id="daily">
+  <div class="sec-head">
+    <span class="spec">4-A · 每日營運報表</span>
+    <h2>30 天營運報表與異常警示</h2>
+    <p>每天的轉數不同，轉數越少、RTP 自然波動越大，所以警示門檻要跟著轉數調整：|z| = |實際 RTP − 理論 RTP| ÷ (σ / √n)。可以模擬「某天起誤用了測試版賠率表」的情境，看兩種規則各自多久發現。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>情境設定</h3>
+      <div class="field"><label for="mo-days">天數</label><input type="number" id="mo-days" value="30" min="7" max="90" step="1"></div>
+      <div class="field"><label for="mo-spins">平均每日轉數</label><input type="number" id="mo-spins" value="40000" min="1000" max="200000" step="1000"></div>
+      <div class="field"><label for="mo-z">z 警示門檻</label><input type="number" id="mo-z" value="3" min="1.5" max="5" step="0.5"></div>
+      <div class="field"><label for="mo-band">固定區間 ±%<small>對照用的簡單規則</small></label><input type="number" id="mo-band" value="3" min="0.5" max="20" step="0.5"></div>
+      <label class="check"><input type="checkbox" id="mo-anom" checked> 模擬設定錯誤</label>
+      <div class="field"><label for="mo-aday">錯誤開始日</label><input type="number" id="mo-aday" value="21" min="2" max="90" step="1"></div>
+      <div class="field"><label for="mo-ak">錯誤版賠率倍數<small>1.08 = RTP 高約 8%</small></label><input type="number" id="mo-ak" value="1.08" min="0.8" max="1.3" step="0.01"></div>
+      <button class="btn" id="mo-seed" type="button">換一組亂數重跑</button>
+      <div class="errors" id="mo-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="row"><span class="spec" id="mo-status">準備中…</span></div>
+      <div class="progress"><i id="mo-bar"></i></div>
+      <div class="verdict" id="mo-verdict"></div>
+      <div class="stats" id="mo-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>每日實際 RTP 與 z 檢定門檻</h3></div>
+        <div id="mo-chart"></div>
+        <div class="legend"><span><i class="dot" style="background:var(--muted)"></i>正常</span><span><i class="dot" style="background:var(--bad)"></i>z 檢定警示</span><span><i style="background:var(--muted)"></i>理論 RTP ± z·σ/√n</span><span><i style="background:var(--warn)"></i>固定區間</span></div>
+      </div>
+      <div class="box">
+        <div class="cap"><h3>累計 RTP（越多天越接近理論值）</h3></div>
+        <div id="mo-cum"></div>
+      </div>
+      <div class="tbl-wrap report">
+        <table aria-label="每日營運報表"><thead><tr><th>日期</th><th>轉數</th><th>總下注</th><th>總派彩</th><th>實際 RTP</th><th>z</th><th>免費遊戲 實際／期望</th><th>最高單局</th><th>z 檢定</th><th>固定區間</th></tr></thead><tbody id="mo-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="multi">
+  <div class="sec-head">
+    <span class="spec">4-B · 多重檢定 · 大數法則</span>
+    <h2>每天都看一次，誤報會累積</h2>
+    <p>單日用 z = 2 的門檻，誤報率只有 4.6%；但一個月檢查 30 次，至少誤報一次的機率是 1 − 0.954³⁰ ≈ 76%。所以每日監控要用更嚴格的門檻，或改看累計資料。右表則說明轉數與「機台當天虧錢」的關係：轉數越多，莊家優勢越穩定。</p>
+  </div>
+  <div class="two">
+    <div class="tbl-wrap">
+      <table aria-label="多重檢定誤報率"><thead><tr><th>z 門檻</th><th>單日誤報率</th><th>30 天內至少一次</th><th>一年內至少一次</th></tr></thead><tbody id="mo-multi"></tbody></table>
+    </div>
+    <div class="tbl-wrap">
+      <table aria-label="每日轉數與虧損機率"><thead><tr><th>每日轉數</th><th>RTP 95% 波動範圍</th><th>機台當天虧錢的機率</th></tr></thead><tbody id="mo-lln"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">報表檢查</span><h2>報表與警示規則檢查</h2>
+    <p>交付報表前的自動檢查：資料是否完整、加總是否一致、警示規則是否同時抓得到真異常又不亂報。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>營運資料為模擬生成（示範用虛構機台）。σ 取自 10 萬局校準模擬，對應 PAR 表中的單局標準差。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script src="assets/slot-engine.js"></script>
+<script>
+(function(){
+const {$,num,pct}=PF;
+let ST,A,M,sigma=null,tok=null,seed=2026;const QA={};
+SLOT.nav($('chapters'),'slot-monitor.html');
+function init(){ST=SLOT.load();A=SLOT.banner($('cfg'),ST,init);M=SLOT.machine(ST.cfg);
+  // 校準 σ（PAR 表的單局標準差）
+  const r=PF.rng(999);let s=0,s2=0;const N=100000;for(let i=0;i<N;i++){const m=M.play(r).win/SLOT.BET;s+=m;s2+=m*m;}sigma=Math.sqrt(s2/N-(s/N)**2);
+  renderStatic();run();}
+function renderStatic(){
+  $('mo-multi').innerHTML=[2,2.5,3,3.5,4].map(z=>{const a=2*(1-PF.normCdf(z));return `<tr><td class="mono">${z}</td><td class="mono">${pct(a,3)}</td><td class="mono">${pct(1-Math.pow(1-a,30),1)}</td><td class="mono">${pct(1-Math.pow(1-a,365),1)}</td></tr>`;}).join('');
+  const edge=1-A.total;
+  $('mo-lln').innerHTML=[1000,10000,40000,100000,1000000].map(n=>{const h=1.96*sigma/Math.sqrt(n),p=PF.normCdf(-edge*Math.sqrt(n)/sigma);
+    return `<tr><td class="mono">${num(n)}</td><td class="mono">${pct(A.total-h,1)} – ${pct(A.total+h,1)}</td><td class="mono">${pct(p,1)}</td></tr>`;}).join('');
+}
+function run(){
+  if(tok)tok.cancel=true;
+  const v=id=>+$(id).value;
+  const D=Math.round(v('mo-days')),avg=Math.round(v('mo-spins')),zt=v('mo-z'),band=v('mo-band')/100,anom=$('mo-anom').checked,aday=Math.round(v('mo-aday')),ak=v('mo-ak');
+  const bad=[],msg=[];
+  if(!(D>=7&&D<=90)){bad.push('mo-days');msg.push('天數需介於 7 到 90。');}
+  if(!(avg>=1000&&avg<=200000)){bad.push('mo-spins');msg.push('每日轉數需介於 1,000 到 200,000。');}
+  if(!(zt>=1.5&&zt<=5)){bad.push('mo-z');msg.push('z 門檻需介於 1.5 到 5。');}
+  if(!(band>=0.005&&band<=0.2)){bad.push('mo-band');msg.push('固定區間需介於 0.5% 到 20%。');}
+  if(anom&&!(aday>=2&&aday<=D)){bad.push('mo-aday');msg.push('錯誤開始日需介於第 2 天和最後一天之間。');}
+  if(anom&&!(ak>=0.8&&ak<=1.3)){bad.push('mo-ak');msg.push('錯誤版倍數需介於 0.8 到 1.3。');}
+  PF.invalid(['mo-days','mo-spins','mo-z','mo-band','mo-aday','mo-ak'],bad);$('mo-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.mo=null;renderQA();return;}
+  const r=PF.rng(seed),Mbad=SLOT.machine(SLOT.scaled(ST.cfg,ak));
+  const days=[];for(let d=0;d<D;d++)days.push({n:Math.round(avg*(0.7+0.6*r())),bet:0,win:0,trig:0,max:0,bad:anom&&d+1>=aday});
+  const idx=[];days.forEach((d,i)=>{idx.push(i);});
+  let di=0,done=0;const total=days.reduce((a,b)=>a+b.n,0);
+  tok=SLOT.chunked(total,30000,()=>{let d=days[di];while(done>=d.n){di++;done=0;d=days[di];}
+      const g=(d.bad?Mbad:M).play(r);d.bet+=SLOT.BET;d.win+=g.win;if(g.trig)d.trig++;if(g.win/SLOT.BET>d.max)d.max=g.win/SLOT.BET;done++;},
+    p=>{$('mo-bar').style.width=(p*100).toFixed(1)+'%';$('mo-status').textContent=`模擬營運中 ${num(p*total)} / ${num(total)} 局…`;},
+    ()=>{$('mo-status').textContent=`完成 ${D} 天、${num(total)} 局，種子 ${seed}`;render(days,zt,band,anom,aday,ak);});
+}
+function render(days,zt,band,anom,aday,ak){
+  const T=A.total,start=new Date(2026,8,7);
+  let cb=0,cw=0;const cum=[],pts=[],up=[],lo=[],bu=[],bl=[];
+  days.forEach((d,i)=>{d.rtp=d.win/d.bet;d.z=(d.rtp-T)/(sigma/Math.sqrt(d.n));d.zFlag=Math.abs(d.z)>zt;d.bFlag=Math.abs(d.rtp-T)>band;d.expTrig=d.n*A.pt;
+    cb+=d.bet;cw+=d.win;const cn=cb/SLOT.BET;cum.push([i+1,cw/cb,cn]);
+    pts.push([i+1,d.rtp,d.zFlag?'var(--bad)':'var(--muted)']);const h=zt*sigma/Math.sqrt(d.n);up.push([i+0.6,T+h],[i+1.4,T+h]);lo.push([i+0.6,T-h],[i+1.4,T-h]);});
+  const zDet=days.findIndex(d=>d.bad&&d.zFlag),bDet=days.findIndex(d=>d.bad&&d.bFlag);
+  const zFalse=days.filter(d=>!d.bad&&d.zFlag).length,bFalse=days.filter(d=>!d.bad&&d.bFlag).length,nGood=days.filter(d=>!d.bad).length;
+  const trigChi=days.reduce((a,d)=>a+(d.trig-d.expTrig)**2/d.expTrig,0),trigP=PF.chi2Sf(trigChi,days.length);
+  QA.mo={days,zDet,bDet,zFalse,bFalse,nGood,anom,trigChi,trigP,cb,cw,zt};
+  const fmtDay=i=>{const d=new Date(start);d.setDate(d.getDate()+i);return `${d.getMonth()+1}/${d.getDate()}`;};
+  $('mo-verdict').innerHTML=anom
+    ?`<span class="pill ${zDet>=0?'ok':'bad'}">${zDet>=0?'z 檢定抓到異常':'z 檢定未抓到'}</span><span>設定錯誤從第 ${aday} 天（${fmtDay(aday-1)}）開始，RTP 偏高約 ${pct(T*(ak-1),1)}。z 檢定${zDet>=0?`在第 ${zDet+1} 天發出警示（延遲 ${zDet+1-aday} 天）`:'在模擬期間沒有發出警示，可以降低門檻或改看累計資料'}；固定區間${bDet>=0?`在第 ${bDet+1} 天發出警示`:'沒有發出警示'}。正常期間的誤報：z 檢定 ${zFalse} 次、固定區間 ${bFalse} 次。</span>`
+    :`<span class="pill ${zFalse?'info':'ok'}">${zFalse?'有誤報':'沒有誤報'}</span><span>這 ${days.length} 天機台設定都正確。z 檢定誤報 ${zFalse} 次，固定區間誤報 ${bFalse} 次。固定區間不管轉數多寡都用同一個標準，轉數少的日子容易誤報，轉數多的日子又容易漏報。</span>`;
+  PF.tiles($('mo-stats'),[
+    ['期間累計 RTP',pct(cw/cb,2),'理論 '+pct(T,2),'hl'],
+    ['總轉數',num(cb/SLOT.BET),'總下注 '+num(cb)+' 點'],
+    ['莊家淨收入',num(cb-cw)+' 點','佔下注 '+pct(1-cw/cb,2),cb-cw<0?'alert':'good'],
+    ['單局標準差 σ',sigma.toFixed(3),'PAR 表校準值']]);
+  const ys=[...pts.map(p=>p[1]),...up.map(p=>p[1]),...lo.map(p=>p[1]),T-band,T+band];
+  PF.chart($('mo-chart'),{label:'每日 RTP',x0:0.4,x1:days.length+0.6,y0:Math.min(...ys)-0.01,y1:Math.max(...ys)+0.01,yFmt:v=>Math.round(v*100)+'%',xStep:days.length>45?10:5,
+    series:[{kind:'line',pts:up,stroke:'var(--muted)',sw:1.2},{kind:'line',pts:lo,stroke:'var(--muted)',sw:1.2},{kind:'dots',pts,r:4,op:0.95}],
+    hmarks:[{y:T,color:'var(--ink)',label:'理論 '+pct(T,2)},{y:T+band,color:'var(--warn)'},{y:T-band,color:'var(--warn)'}],
+    vmarks:anom?[{x:aday-0.5,color:'var(--bad)',label:'設定錯誤開始'}]:[]});
+  const fu=[],fl=[];cum.forEach(([d,,cn])=>{const h=zt*sigma/Math.sqrt(cn);fu.push([d,T+h]);fl.push([d,T-h]);});
+  const cy=[...cum.map(c=>c[1]),...fu.map(p=>p[1]),...fl.map(p=>p[1])];
+  PF.chart($('mo-cum'),{label:'累計 RTP',x0:1,x1:days.length,y0:Math.min(...cy)-0.003,y1:Math.max(...cy)+0.003,yFmt:v=>(v*100).toFixed(1)+'%',xStep:days.length>45?10:5,
+    series:[{kind:'line',pts:fu,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'line',pts:fl,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'line',pts:cum.map(c=>[c[0],c[1]]),stroke:'var(--accent)'}],
+    hmarks:[{y:T,color:'var(--ink)'}],vmarks:anom?[{x:aday-0.5,color:'var(--bad)'}]:[]});
+  $('mo-tbl').innerHTML=days.map((d,i)=>`<tr><td>${fmtDay(i)}${d.bad?' <span class="pill bad">錯誤版</span>':''}</td><td class="mono">${num(d.n)}</td><td class="mono">${num(d.bet)}</td><td class="mono">${num(d.win)}</td><td class="mono">${pct(d.rtp,2)}</td><td class="mono">${d.z.toFixed(2)}</td><td class="mono">${d.trig} / ${d.expTrig.toFixed(0)}</td><td class="mono">${num(d.max,1)} 倍</td><td>${d.zFlag?'<span class="pill bad">警示</span>':'<span class="pill ok">正常</span>'}</td><td>${d.bFlag?'<span class="pill bad">警示</span>':'<span class="pill ok">正常</span>'}</td></tr>`).join('')
+    +`<tr><td><b>合計</b></td><td class="mono">${num(cb/SLOT.BET)}</td><td class="mono">${num(cb)}</td><td class="mono">${num(cw)}</td><td class="mono">${pct(cw/cb,2)}</td><td></td><td class="mono">${days.reduce((a,d)=>a+d.trig,0)} / ${days.reduce((a,d)=>a+d.expTrig,0).toFixed(0)}</td><td></td><td></td><td></td></tr>`;
+  renderQA();
+}
+function renderQA(){
+  const rows=[];
+  if(QA.mo){const m=QA.mo;
+    const sumB=m.days.reduce((a,d)=>a+d.bet,0),sumW=m.days.reduce((a,d)=>a+d.win,0);
+    rows.push(['M-SUM','每日加總 = 期間合計（報表一致性）',`下注 ${num(sumB)} / ${num(m.cb)}，派彩 ${num(Math.round(sumW))} / ${num(Math.round(m.cw))}`,sumB===m.cb&&Math.abs(sumW-m.cw)<1e-6?'ok':'bad']);
+    rows.push(['M-FULL','資料完整：每天都有轉數紀錄',`${m.days.length} 天，最少 ${num(Math.min(...m.days.map(d=>d.n)))} 轉`,m.days.every(d=>d.n>0)?'ok':'bad']);
+    if(m.anom)rows.push(['M-DET','z 檢定能在設定錯誤後抓到異常',m.zDet>=0?`第 ${m.zDet+1} 天警示`:'未警示',m.zDet>=0?'ok':'info']);
+    const exp=m.nGood*2*(1-PF.normCdf(m.zt));
+    rows.push(['M-FA','正常期間 z 檢定誤報次數在預期範圍',`${m.zFalse} 次，預期約 ${exp.toFixed(2)} 次`,m.zFalse<=Math.max(2,exp*3)?'ok':'info']);
+    rows.push(['M-BAND','固定區間規則的誤報次數（對照）',`${m.bFalse} 次 / ${m.nGood} 個正常日`,'info']);
+    rows.push(['M-TRIG','免費遊戲觸發次數符合卜瓦松波動（卡方）',`χ² = ${m.trigChi.toFixed(1)}，df = ${m.days.length}，p = ${PF.fmtP(m.trigP)}`,m.trigP>=0.01?'ok':'info']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+const d=PF.debounce(run,400);['mo-days','mo-spins','mo-z','mo-band','mo-anom','mo-aday','mo-ak'].forEach(id=>$(id).addEventListener('input',d));
+$('mo-seed').addEventListener('click',()=>{seed++;run();});
+init();
+})();
+</script>
+</body>
+</html>

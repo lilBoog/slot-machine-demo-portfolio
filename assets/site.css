@@ -109,5 +109,18 @@ button.btn.solid{background:var(--accent);color:var(--surface)}
 @media (max-width:520px){.qa-row{grid-template-columns:minmax(0,1fr) auto}.qa-row .id{grid-column:1/-1}}
 .hbar{display:flex;align-items:center;gap:8px;justify-content:flex-end}
 .hbar i{display:block;height:7px;border-radius:3px;background:var(--accent);min-width:1px}
+/* 金鯉躍門章節導覽 */
+.chapters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:6px}
+@media (max-width:760px){.chapters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chapters a{display:flex;gap:8px;align-items:center;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.chapters a:hover,.chapters a:focus-visible{border-color:var(--accent);outline:none}
+.chapters a.on{border-color:var(--accent);background:var(--accent-soft)}
+.chapters .n{font-family:var(--f-mono);font-size:12px;width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--sunk);color:var(--muted)}
+.chapters a.on .n{background:var(--accent);color:var(--surface)}
+.chapters b{display:block;font-size:13px;font-weight:500}
+.chapters small{display:block;font-size:11px;color:var(--muted)}
+.cfg-banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.progress{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent)}
 footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

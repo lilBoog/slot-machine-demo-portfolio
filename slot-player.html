@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金鯉躍門・玩家體驗</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#A82C1C;--accent-soft:#F3DCD6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#E2654F;--accent-soft:#3B1C16}}
+:root[data-theme="dark"]{--accent:#E2654F;--accent-soft:#3B1C16}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">金鯉躍門 · 第 3 章 · 蒙地卡羅模擬與賭徒破產</div>
+  <h1>玩家體驗：帶 1,000 點能玩多久</h1>
+  <p class="lede">RTP 和波動度是設計者的語言，玩家感受到的是「玩了多久」「有沒有贏過」「多久沒中獎」。這一章用完整遊戲流程模擬一批玩家，把數學指標翻譯成體驗指標，並比較不同押注大小。這是賭徒破產問題在多種賠付結果下的延伸，沒有封閉解，只能靠模擬。</p>
+  <nav class="chapters" id="chapters" aria-label="金鯉躍門章節"></nav>
+  <div class="cfg-banner" id="cfg"></div>
+</header>
+
+<section id="session">
+  <div class="sec-head">
+    <span class="spec">3-A · Gambler's ruin · Survival analysis</span>
+    <h2>遊戲時長與破產機率</h2>
+    <p>每位玩家帶相同本金，餘額不足一次押注就算破產離場，玩到轉數上限也會離場。可以設定停利倍數，例如 1.5 表示餘額到本金 1.5 倍就收手。下方同時模擬三種每線押注，比較「押大一點」對體驗的影響。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>玩家設定</h3>
+      <div class="field"><label for="pl-b">本金（點）</label><input type="number" id="pl-b" value="1000" min="20" max="100000" step="100"></div>
+      <div class="field"><label for="pl-cap">轉數上限<small>約等於一次遊玩時間</small></label><input type="number" id="pl-cap" value="1000" min="50" max="5000" step="50"></div>
+      <div class="field"><label for="pl-stop">停利倍數<small>0 = 不停利</small></label><input type="number" id="pl-stop" value="0" min="0" max="20" step="0.5"></div>
+      <div class="field"><label for="pl-m">每組玩家數</label><input type="number" id="pl-m" value="1000" min="100" max="5000" step="100"></div>
+      <p class="note">比較每線押注 1、2、5 點（總押注 20、40、100 點）。</p>
+      <button class="btn" id="pl-seed" type="button">換一組亂數重跑</button>
+      <div class="errors" id="pl-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="row"><span class="spec" id="pl-status">準備中…</span></div>
+      <div class="progress"><i id="pl-bar"></i></div>
+      <div class="stats" id="pl-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>仍在遊玩的玩家比例（存活曲線）</h3></div>
+        <div id="pl-surv"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>每線 1 點</span><span><i style="background:var(--c1)"></i>每線 2 點</span><span><i style="background:var(--c3)"></i>每線 5 點</span><span>虛線為只看期望值的估計（本金 ÷ 每轉期望損失）</span></div>
+      </div>
+      <div class="tbl-wrap">
+        <table aria-label="押注大小比較"><thead><tr><th>每線押注</th><th>本金可押幾轉</th><th>破產率</th><th>中位轉數</th><th>平均轉數</th><th>曾經領先</th><th>停利達成</th><th>平均損失</th><th>理論損失</th></tr></thead><tbody id="pl-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="feel">
+  <div class="sec-head">
+    <span class="spec">3-B · 體驗指標</span>
+    <h2>多久沒中獎會讓人想走</h2>
+    <p>以每線押注 1 點的玩家為準。命中率高不代表體驗好：小額中獎常常低於押注，玩家感受到的是「贏回押注以上」的頻率。連續沒中獎的長度是調整波動度時最常參考的體驗指標。</p>
+  </div>
+  <div class="two">
+    <div class="box">
+      <div class="cap"><h3>結束時餘額分布（每線 1 點）</h3></div>
+      <div id="pl-final"></div>
+      <div class="note" id="pl-final-note"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table aria-label="連續未中獎"><thead><tr><th>指標</th><th>數值</th><th>說明</th></tr></thead><tbody id="pl-feel"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">結果檢查</span><h2>模擬結果與理論一致嗎</h2>
+    <p>玩家平均損失應該等於「總下注額 × 莊家優勢」，這是期望值線性性質的直接結果，不受停利或破產規則影響。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>示範用虛構機台。所有模擬都在瀏覽器內以完整遊戲流程（含免費遊戲與重觸發）執行，免費遊戲整段算作一轉。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script src="assets/slot-engine.js"></script>
+<script>
+(function(){
+const {$,num,pct}=PF;
+let ST,A,M,tok=null,seed=41;const QA={};
+SLOT.nav($('chapters'),'slot-player.html');
+function init(){ST=SLOT.load();A=SLOT.banner($('cfg'),ST,init);M=SLOT.machine(ST.cfg);run();}
+const BETS=[1,2,5],COLS=['var(--accent)','var(--c1)','var(--c3)'];
+function run(){
+  if(tok)tok.cancel=true;
+  const B=+$('pl-b').value,cap=Math.round(+$('pl-cap').value),stop=+$('pl-stop').value,Mn=Math.round(+$('pl-m').value);
+  const bad=[],msg=[];
+  if(!(B>=20&&B<=100000)){bad.push('pl-b');msg.push('本金需介於 20 到 100,000 點。');}
+  if(!(cap>=50&&cap<=5000)){bad.push('pl-cap');msg.push('轉數上限需介於 50 到 5,000。');}
+  if(!(stop===0||(stop>1&&stop<=20))){bad.push('pl-stop');msg.push('停利倍數需為 0（不停利）或介於 1 到 20 之間。');}
+  if(!(Mn>=100&&Mn<=5000)){bad.push('pl-m');msg.push('玩家數需介於 100 到 5,000。');}
+  PF.invalid(['pl-b','pl-cap','pl-stop','pl-m'],bad);$('pl-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.pl=null;renderQA();return;}
+  const r=PF.rng(seed),res=BETS.map(()=>({alive:new Float64Array(cap+1),spins:[],finals:[],lead:0,ruin:0,stopped:0,wager:0,loss:0,streaks:[],big:0,hits:0,n:0,d:[]}));
+  const total=BETS.length*Mn;
+  tok=SLOT.chunked(total,40,i=>{
+    const bi=Math.floor(i/Mn),lb=BETS[bi],bet=SLOT.BET*lb,o=res[bi];
+    let c=B,t=0,peak=B,streak=0,maxStreak=0,wg=0;
+    while(c>=bet&&t<cap&&!(stop>0&&c>=B*stop)){const g=M.play(r);const w=g.win*lb;c+=w-bet;t++;o.wager+=bet;wg+=bet;o.n++;
+      if(w>0){o.hits++;if(w>=bet)o.big++;streak=0;}else{streak++;if(streak>maxStreak)maxStreak=streak;}
+      if(c>peak)peak=c;}
+    for(let k=0;k<=t;k++)o.alive[k]++;
+    if(c<bet)o.ruin++;else if(stop>0&&c>=B*stop)o.stopped++;
+    if(peak>B)o.lead++;o.spins.push(t);o.finals.push(c);o.loss+=B-c;o.streaks.push(maxStreak);o.d.push(B-c-wg*(1-A.total));
+  },p=>{$('pl-bar').style.width=(p*100).toFixed(1)+'%';$('pl-status').textContent=`模擬中 ${num(p*total)} / ${num(total)} 位玩家…`;},
+  ()=>{$('pl-status').textContent=`完成 ${num(total)} 位玩家，種子 ${seed}`;render(res,B,cap,stop,Mn);});
+}
+const med=a=>{const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)];};
+const qtl=(a,q)=>{const s=a.slice().sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*q))];};
+function render(res,B,cap,stop,Mn){
+  const edge=1-A.total;
+  const rows=res.map((o,i)=>{const lb=BETS[i],bet=SLOT.BET*lb,avgSp=o.spins.reduce((a,b)=>a+b,0)/Mn;
+    const dm=o.d.reduce((a,b)=>a+b,0)/Mn,ds=Math.sqrt(o.d.reduce((a,b)=>a+(b-dm)**2,0)/(Mn-1)),z=dm/(ds/Math.sqrt(Mn));
+    return{z,lb,bet,can:Math.floor(B/bet),ruin:o.ruin/Mn,med:med(o.spins),avg:avgSp,lead:o.lead/Mn,stop:o.stopped/Mn,loss:o.loss/Mn,theo:o.wager/Mn*edge,wager:o.wager};});
+  const o=res[0],r0=rows[0];
+  QA.pl={rows,Mn,edge};
+  PF.tiles($('pl-stats'),[
+    ['破產率',pct(r0.ruin,1),'每線 1 點，'+num(cap)+' 轉內','alert'],
+    ['中位遊戲轉數',num(r0.med),'一半玩家在這之前離場','hl'],
+    ['曾經領先過',pct(r0.lead,1),'餘額曾高於本金'],
+    ['平均損失',num(r0.loss,0)+' 點','理論 '+num(r0.theo,0)+' 點']]);
+  const ser=res.map((x,i)=>{const pts=[];const step=Math.max(1,Math.floor(cap/250));for(let k=0;k<=cap;k+=step)pts.push([k,x.alive[k]/Mn]);pts.push([cap,x.alive[cap]/Mn]);return{kind:'line',pts,stroke:COLS[i],sw:2};});
+  const vm=rows.map((x,i)=>({x:B/(x.bet*edge),color:COLS[i]})).filter(v=>v.x<=cap&&edge>0);
+  PF.chart($('pl-surv'),{label:'玩家存活曲線',x0:0,x1:cap,y0:0,y1:1,yStep:0.25,yFmt:v=>Math.round(v*100)+'%',series:ser,vmarks:vm});
+  $('pl-tbl').innerHTML=rows.map(x=>`<tr><td>${x.lb} 點（總押注 ${x.bet}）</td><td class="mono">${num(x.can)}</td><td class="mono">${pct(x.ruin,1)}</td><td class="mono">${num(x.med)}</td><td class="mono">${num(x.avg,0)}</td><td class="mono">${pct(x.lead,1)}</td><td class="mono">${stop>0?pct(x.stop,1):'—'}</td><td class="mono">${num(x.loss,0)}</td><td class="mono">${num(x.theo,0)}</td></tr>`).join('');
+  // 結束餘額
+  const f=o.finals,hi=qtl(f,0.99),bins=30,bw=Math.max(1,hi/bins),c=new Array(bins+1).fill(0);f.forEach(v=>c[Math.min(bins,Math.floor(v/bw))]++);
+  const pts=c.map((v,i)=>[(i+0.5)*bw,v/Mn]);
+  PF.chart($('pl-final'),{label:'結束餘額分布',x0:0,x1:(bins+1)*bw,y0:0,y1:Math.max(...pts.map(p=>p[1]))*1.15,yFmt:v=>Math.round(v*100)+'%',xFmt:v=>num(v),
+    series:[{kind:'bar',pts,color:(x)=>x>=B?'var(--ok)':'var(--accent)',op:0.8,width:bw*0.85}],vmarks:[{x:B,color:'var(--ink)',label:'本金 '+num(B)}]});
+  const win=f.filter(v=>v>B).length/Mn;$('pl-final-note').textContent=`結束時餘額高於本金的玩家 ${pct(win,1)}；最右側一格包含前 1% 的大贏家。`;
+  const hit=o.hits/o.n,big=o.big/o.n,q0=1-hit;
+  $('pl-feel').innerHTML=[
+    ['命中率（任何贏分）',pct(hit,1),'約每 '+num(1/hit,1)+' 轉中一次'],
+    ['贏回押注以上',pct(big,1),'約每 '+num(1/big,1)+' 轉一次，玩家實際「有感」的頻率'],
+    ['連續 10 轉沒中',pct(Math.pow(q0,10),2),'q₀¹⁰，q₀ = 單轉未中機率 '+pct(q0,1)],
+    ['最長連續未中（中位數）',num(med(o.streaks))+' 轉','每位玩家一次遊玩中最長的一段'],
+    ['最長連續未中（P90）',num(qtl(o.streaks,0.9))+' 轉','10% 的玩家會遇到更長的'],
+  ].map(([a,b,d])=>`<tr><td>${a}</td><td class="mono">${b}</td><td style="white-space:normal;text-align:left" class="muted">${d}</td></tr>`).join('');
+  renderQA();
+}
+function renderQA(){
+  const rows=[];
+  if(QA.pl){const p=QA.pl;
+    p.rows.forEach(x=>{rows.push(['P-LOSS'+x.lb,`每線 ${x.lb} 點：平均損失與「總下注 × 莊家優勢」差距在 ±3 標準誤內`,`模擬 ${num(x.loss,0)}，理論 ${num(x.theo,0)}，z = ${x.z.toFixed(2)}（大獎稀少，損失分布長尾，小樣本差距會比較大）`,Math.abs(x.z)<=3?'ok':'bad']);});
+    const mono=p.rows.every((x,i)=>i===0||x.ruin>=p.rows[i-1].ruin-0.02);
+    rows.push(['P-RUIN','押注越大，固定轉數內破產率越高',p.rows.map(x=>pct(x.ruin,1)).join(' → '),mono?'ok':'info']);
+    rows.push(['P-EDGE','莊家優勢 > 0（玩家長期必輸）','1 − RTP = '+pct(p.edge,2),p.edge>0?'ok':'bad']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+const d=PF.debounce(run,400);['pl-b','pl-cap','pl-stop','pl-m'].forEach(id=>$(id).addEventListener('input',d));
+$('pl-seed').addEventListener('click',()=>{seed++;run();});
+init();
+})();
+</script>
+</body>
+</html>
