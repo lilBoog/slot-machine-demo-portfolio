@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蒙地卡羅模擬實驗室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#2D5FA6;--accent-soft:#DCE6F4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#79A8EC;--accent-soft:#1C2A40}}
+:root[data-theme="dark"]{--accent:#79A8EC;--accent-soft:#1C2A40}
+.pi-grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:760px){.pi-grid{grid-template-columns:minmax(0,1fr)}}
+canvas{width:100%;max-width:340px;aspect-ratio:1/1;height:auto;display:block;border-radius:8px;background:var(--sunk)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">專案 01 · Probability &amp; Simulation</div>
+  <h1>蒙地卡羅模擬實驗室</h1>
+  <p class="lede">三個經典機率問題，各自用程式模擬，再跟理論值比較。重點不只是「答案對」，而是看出模擬誤差怎麼隨樣本數縮小、直覺在哪裡出錯，以及負期望值的遊戲為什麼長期一定輸。</p>
+  <nav class="toc" aria-label="章節"><a href="#pi">估算 π</a><a href="#monty">蒙提霍爾問題</a><a href="#ruin">賭徒破產</a><a href="#qa">結果檢查</a></nav>
+</header>
+
+<!-- π -->
+<section id="pi">
+  <div class="sec-head">
+    <span class="spec">1-A · Monte Carlo Method</span>
+    <h2>用隨機點估算 π</h2>
+    <p>在邊長 1 的正方形內均勻撒點，落在四分之一圓內的比例趨近 π/4。這是最簡單的蒙地卡羅積分。估計值的標準誤是 4·√(p(1−p)/n)，所以誤差跟 √n 成反比：想多一位小數的精度，要多 100 倍的點。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>參數</h3>
+      <div class="field"><label for="pi-n">撒點數量 n<small>100 – 1,000,000</small></label><input type="number" id="pi-n" value="20000" min="100" max="1000000" step="1000"></div>
+      <button class="btn" id="pi-seed" type="button">換一組亂數重撒</button>
+      <div class="formula">π̂ = 4 × (圓內點數 ÷ n)<br>SE = 4·√(p(1−p)/n)，p = π/4</div>
+      <div class="errors" id="pi-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats" id="pi-stats"></div>
+      <div class="pi-grid">
+        <div class="box"><h3>前 8,000 個點</h3><canvas id="pi-canvas" width="680" height="680" aria-label="隨機點分布圖"></canvas></div>
+        <div class="box">
+          <div class="cap"><h3>估計值隨樣本數收斂（橫軸為對數刻度）</h3></div>
+          <div id="pi-conv"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>累計估計值</span><span><i style="background:var(--muted)"></i>π ± 1.96 SE（95% 範圍）</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Monty Hall -->
+<section id="monty">
+  <div class="sec-head">
+    <span class="spec">1-B · Monty Hall Problem</span>
+    <h2>蒙提霍爾問題：換門到底有沒有比較好</h2>
+    <p>你選一扇門，知道車在哪的主持人打開其餘門中的羊，只留一扇。這時換門的勝率是 (n−1)/n，不是直覺的一半。關鍵在主持人的行為帶有資訊：如果主持人不知情、只是剛好沒開到車，換不換就真的都是 1/2。兩種情況都可以在下面切換模擬。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>參數</h3>
+      <div class="field"><label for="mh-doors">門的數量<small>主持人開到剩 2 扇</small></label><input type="number" id="mh-doors" value="3" min="3" max="10" step="1"></div>
+      <div class="field"><label for="mh-n">模擬局數</label><input type="number" id="mh-n" value="10000" min="100" max="200000" step="1000"></div>
+      <label class="check"><input type="checkbox" id="mh-know" checked> 主持人知道車在哪（只開羊）</label>
+      <button class="btn" id="mh-seed" type="button">換一組亂數重跑</button>
+      <div class="formula" id="mh-formula"></div>
+      <div class="errors" id="mh-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats" id="mh-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>累計勝率</h3></div>
+        <div id="mh-chart"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>換門</span><span><i style="background:var(--c2)"></i>不換</span><span><i style="background:var(--muted)"></i>理論值</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Gambler's ruin -->
+<section id="ruin">
+  <div class="sec-head">
+    <span class="spec">1-C · Gambler's Ruin</span>
+    <h2>賭徒破產：期望值、變異數與破產機率</h2>
+    <p>每局押 1 單位，贏的機率 p（歐式輪盤押紅色是 18/37 ≈ 48.65%）。玩家帶著本金上桌，達到目標金額或輸光就離開。只要 p 小於 50%，就算每局只差一點點，本金越小、目標越遠，破產機率就越接近 100%。下方也比較了「押大注、少玩幾局」的策略。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>參數</h3>
+      <div class="field"><label for="gr-i">起始本金 i<small>單位</small></label><input type="number" id="gr-i" value="50" min="1" step="1"></div>
+      <div class="field"><label for="gr-N">目標金額 N<small>達到就離場，≤ 1000</small></label><input type="number" id="gr-N" value="100" min="2" max="1000" step="1"></div>
+      <div class="field"><label for="gr-p">每局勝率 p %</label><input type="number" id="gr-p" value="48.65" min="1" max="99" step="0.05"></div>
+      <div class="field"><label for="gr-m">模擬玩家數</label><input type="number" id="gr-m" value="2000" min="100" max="20000" step="500"></div>
+      <button class="btn" id="gr-seed" type="button">換一組亂數重跑</button>
+      <div class="formula">r = q/p，q = 1 − p<br>P(達標) = (1 − rⁱ) / (1 − rᴺ)<br>p = ½ 時 P(達標) = i/N</div>
+      <div class="errors" id="gr-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats" id="gr-stats"></div>
+      <div class="two">
+        <div class="box">
+          <div class="cap"><h3>破產機率 vs 起始本金</h3></div>
+          <div id="gr-curve"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>目前勝率 p</span><span><i style="background:var(--muted)"></i>公平遊戲 p = 50%</span></div>
+        </div>
+        <div class="box">
+          <div class="cap"><h3>8 位玩家的資金路徑</h3></div>
+          <div id="gr-paths"></div>
+          <div class="note">每條線是一位玩家，碰到 0 或目標 N 就停止。</div>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table aria-label="押注大小比較">
+          <thead><tr><th>每局押注</th><th>達標機率</th><th>破產機率</th><th>期望局數</th><th>期望總下注額</th><th>期望損失</th></tr></thead>
+          <tbody id="gr-bets"></tbody>
+        </table>
+      </div>
+      <p class="note">押注越大，玩的局數越少，賭場優勢作用的次數也越少，所以達標機率反而較高。但期望損失跟「總下注額 × 賭場優勢」成正比，長期仍然是負的。</p>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">結果檢查</span><h2>模擬與理論值是否一致</h2>
+    <p>每個模擬結果都跟理論值比較，差距在 3 個標準誤以內才算通過。樣本數太小時，偶爾不通過是正常現象，換一組亂數就會回來。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>所有模擬都在瀏覽器內執行，使用可重現的 mulberry32 亂數產生器（固定種子，按「換一組亂數」才會改變）。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP}=PF;
+const QA={};
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- π ---------- */
+let piSeed=11;
+function runPi(){
+  const n=Math.round(+$('pi-n').value);const bad=!(n>=100&&n<=1e6);
+  PF.invalid(['pi-n'],bad?['pi-n']:[]);$('pi-err').textContent=bad?'撒點數量需介於 100 到 1,000,000。':'';
+  if(bad){delete QA.pi;renderQA();return;}
+  const r=PF.rng(piSeed),cv=$('pi-canvas'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,680,680);
+  ctx.strokeStyle=css('--muted');ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,680,680,-Math.PI/2,0);ctx.stroke();
+  const cin=css('--accent'),cout=css('--c2');
+  let inside=0;const pts=[];let next=10;
+  for(let i=1;i<=n;i++){const x=r(),y=r(),h=x*x+y*y<=1;if(h)inside++;
+    if(i<=8000){ctx.fillStyle=h?cin:cout;ctx.fillRect(x*680-1.5,680-y*680-1.5,3,3);}
+    if(i>=next||i===n){pts.push([Math.log10(i),4*inside/i]);next=Math.max(next+1,Math.round(next*1.12));}}
+  const est=4*inside/n,p=Math.PI/4,se=4*Math.sqrt(p*(1-p)/n),z=(est-Math.PI)/se;
+  QA.pi={est,se,z,n};
+  PF.tiles($('pi-stats'),[
+    ['π 估計值',est.toFixed(5),'真值 3.14159','hl'],
+    ['誤差',(est-Math.PI>=0?'+':'')+(est-Math.PI).toFixed(5),'相對 '+pct(Math.abs(est-Math.PI)/Math.PI,3)],
+    ['理論標準誤',se.toFixed(5),'n = '+num(n)],
+    ['95% 信賴區間',(est-1.96*se).toFixed(4)+' – '+(est+1.96*se).toFixed(4),Math.abs(z)<=1.96?'包含 π':'未包含 π（約 5% 機率發生）']]);
+  const lmax=Math.log10(n),band=[],bandLo=[];
+  for(let l=1;l<=lmax+1e-9;l+=0.05){const s=4*Math.sqrt(p*(1-p)/Math.pow(10,l));band.push([l,Math.PI+1.96*s]);bandLo.push([l,Math.PI-1.96*s]);}
+  const xt=[];for(let k=1;k<=Math.floor(lmax);k++)xt.push({v:k,l:num(Math.pow(10,k))});
+  PF.chart($('pi-conv'),{label:'π 估計值收斂',x0:1,x1:lmax,y0:2.6,y1:3.7,yStep:0.2,yFmt:v=>v.toFixed(1),xTicks:xt,
+    series:[{kind:'line',pts:band,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'line',pts:bandLo,stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'line',pts,stroke:'var(--accent)',sw:1.8}],
+    hmarks:[{y:Math.PI,color:'var(--ink)',label:'π'}]});
+  renderQA();
+}
+
+/* ---------- Monty Hall ---------- */
+let mhSeed=23;
+function runMonty(){
+  const D=Math.round(+$('mh-doors').value),n=Math.round(+$('mh-n').value),know=$('mh-know').checked;
+  const bad=[];if(!(D>=3&&D<=10))bad.push('mh-doors');if(!(n>=100&&n<=200000))bad.push('mh-n');
+  PF.invalid(['mh-doors','mh-n'],bad);
+  $('mh-err').innerHTML=(bad.includes('mh-doors')?'<div>門的數量需介於 3 到 10。</div>':'')+(bad.includes('mh-n')?'<div>模擬局數需介於 100 到 200,000。</div>':'');
+  if(bad.length){delete QA.mh;renderQA();return;}
+  const r=PF.rng(mhSeed);let valid=0,stay=0,sw=0,voided=0;const ps=[],pw=[];const every=Math.max(1,Math.floor(n/300));
+  for(let g=1;g<=n;g++){
+    const car=Math.floor(r()*D),pick=Math.floor(r()*D);let keep;
+    if(know){if(pick===car){keep=Math.floor(r()*(D-1));if(keep>=pick)keep++;}else keep=car;}
+    else{keep=Math.floor(r()*(D-1));if(keep>=pick)keep++;if(car!==pick&&car!==keep){voided++;continue;}}
+    valid++;if(pick===car)stay++;if(keep===car)sw++;
+    if(valid%every===0){ps.push([g,stay/valid]);pw.push([g,sw/valid]);}
+  }
+  const tStay=know?1/D:0.5,tSw=know?(D-1)/D:0.5;
+  const rs=stay/valid,rw=sw/valid,z=(rw-tSw)/Math.sqrt(tSw*(1-tSw)/valid);
+  QA.mh={rw,tSw,z,valid};
+  $('mh-formula').innerHTML=know?`主持人知情：<br>P(換門贏) = P(一開始選錯) = (n−1)/n = ${(D-1)}/${D}`:`主持人不知情、剛好沒開到車：<br>P(沒開到車) = 2/n，兩扇門對稱<br>P(換門贏 | 沒開到車) = 1/2`;
+  PF.tiles($('mh-stats'),[
+    ['換門勝率',pct(rw,2),'理論 '+pct(tSw,2),'hl'],
+    ['不換勝率',pct(rs,2),'理論 '+pct(tStay,2)],
+    ['有效局數',num(valid),know?'全部有效':'作廢 '+num(voided)+' 局（主持人開到車）'],
+    ['換門 vs 理論','z = '+z.toFixed(2),Math.abs(z)<=3?'在 3 個標準誤內':'超過 3 個標準誤']]);
+  PF.chart($('mh-chart'),{label:'蒙提霍爾累計勝率',x0:0,x1:n,y0:0,y1:1,yStep:0.25,yFmt:v=>Math.round(v*100)+'%',
+    series:[{kind:'line',pts:ps,stroke:'var(--c2)'},{kind:'line',pts:pw,stroke:'var(--accent)'}],
+    hmarks:know?[{y:tSw,color:'var(--muted)',label:'理論 '+pct(tSw,1)},{y:tStay,color:'var(--muted)',label:'理論 '+pct(tStay,1)}]:[{y:0.5,color:'var(--muted)',label:'理論 50%'}]});
+  renderQA();
+}
+
+/* ---------- 賭徒破產 ---------- */
+let grSeed=5;
+function ruinTheory(i,N,p){
+  if(i<=0)return{win:0,dur:0};if(i>=N)return{win:1,dur:0};
+  const q=1-p;if(Math.abs(p-0.5)<1e-12)return{win:i/N,dur:i*(N-i)};
+  const lr=Math.log(q/p);let win;
+  if(lr>0)win=Math.exp((i-N)*lr)*(1-Math.exp(-i*lr))/(1-Math.exp(-N*lr));
+  else win=(1-Math.exp(i*lr))/(1-Math.exp(N*lr));
+  return{win,dur:i/(q-p)-N/(q-p)*win};
+}
+function runRuin(){
+  const i=Math.round(+$('gr-i').value),N=Math.round(+$('gr-N').value),p=+$('gr-p').value/100;let M=Math.round(+$('gr-m').value);
+  const bad=[],msg=[];
+  if(!(N>=2&&N<=1000)){bad.push('gr-N');msg.push('目標金額需介於 2 到 1,000。');}
+  if(!(i>=1&&i<N)){bad.push('gr-i');msg.push('起始本金需大於 0 且小於目標金額。');}
+  if(!(p>=0.01&&p<=0.99)){bad.push('gr-p');msg.push('勝率需介於 1% 到 99%。');}
+  if(!(M>=100&&M<=20000)){bad.push('gr-m');msg.push('模擬玩家數需介於 100 到 20,000。');}
+  PF.invalid(['gr-i','gr-N','gr-p','gr-m'],bad);$('gr-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){delete QA.gr;renderQA();return;}
+  const th=ruinTheory(i,N,p);
+  let note='';if(th.dur*M>3e7){M=Math.max(100,Math.floor(3e7/th.dur));note='（為了速度自動降為 '+num(M)+' 人）';}
+  const r=PF.rng(grSeed);let wins=0,dsum=0;const paths=[];let maxLen=0;
+  for(let m=0;m<M;m++){let x=i,t=0;const path=m<8?[[0,x]]:null;
+    while(x>0&&x<N){x+=r()<p?1:-1;t++;if(path&&t<=4000)path.push([t,x]);}
+    if(x>=N)wins++;dsum+=t;if(path){paths.push(path);maxLen=Math.max(maxLen,Math.min(t,4000));}}
+  const pw=wins/M,z=(pw-th.win)/Math.sqrt(Math.max(th.win*(1-th.win),1e-12)/M);
+  QA.gr={pw,th,z,M,dur:dsum/M};
+  const edge=1-2*p;
+  PF.tiles($('gr-stats'),[
+    ['破產機率',pct(1-th.win,2),'模擬 '+pct(1-pw,2)+note,'alert'],
+    ['達標機率',pct(th.win,2),'模擬 '+pct(pw,2),'hl'],
+    ['期望局數',num(th.dur,0),'模擬平均 '+num(dsum/M,0)],
+    ['每局期望值',(edge>0?'−':'+')+Math.abs(edge).toFixed(4),'變異數 '+(1-(2*p-1)**2).toFixed(4)]]);
+  const cur=[],fair=[];for(let k=0;k<=N;k+=Math.max(1,Math.floor(N/200))){cur.push([k,1-ruinTheory(k,N,p).win]);fair.push([k,1-k/N]);}
+  cur.push([N,0]);fair.push([N,0]);
+  PF.chart($('gr-curve'),{label:'破產機率曲線',x0:0,x1:N,y0:0,y1:1,yStep:0.25,yFmt:v=>Math.round(v*100)+'%',
+    series:[{kind:'line',pts:fair,stroke:'var(--muted)',dash:'4 3',sw:1.4},{kind:'line',pts:cur,stroke:'var(--accent)'}],
+    vmarks:[{x:i,color:'var(--bad)',label:'i = '+i}]});
+  const cols=['var(--accent)','var(--c2)','var(--c3)','var(--ok)','var(--warn)','var(--c1)','var(--bad)','var(--muted)'];
+  PF.chart($('gr-paths'),{label:'玩家資金路徑',x0:0,x1:Math.max(10,maxLen),y0:0,y1:N,yFmt:v=>num(v),
+    series:paths.map((pt,k)=>({kind:'line',pts:pt,stroke:cols[k],sw:1.2,op:0.85})),hmarks:[{y:N,color:'var(--ok)',label:'目標 '+N}]});
+  const sizes=[1,2,5,10,20,25,50,100,200,500].filter(b=>i%b===0&&N%b===0&&i/b>=1&&N/b>i/b);
+  $('gr-bets').innerHTML=sizes.map(b=>{const t=ruinTheory(i/b,N/b,p);const loss=i-t.win*N;
+    return `<tr><td>${b} 單位${b===i&&N===2*i?'（一把梭哈）':''}</td><td class="mono">${pct(t.win,2)}</td><td class="mono">${pct(1-t.win,2)}</td><td class="mono">${num(t.dur,1)}</td><td class="mono">${num(t.dur*b,0)}</td><td class="mono">${num(loss,2)}</td></tr>`;}).join('');
+  renderQA();
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.pi)rows.push(['PI-SE','π 估計值落在真值 ±3 標準誤內',`z = ${QA.pi.z.toFixed(2)}（n = ${num(QA.pi.n)}）`,Math.abs(QA.pi.z)<=3?'ok':'bad']);
+  if(QA.mh)rows.push(['MH-SW','換門勝率落在理論值 ±3 標準誤內',`${pct(QA.mh.rw,2)} vs ${pct(QA.mh.tSw,2)}，z = ${QA.mh.z.toFixed(2)}`,Math.abs(QA.mh.z)<=3?'ok':'bad']);
+  if(QA.gr){rows.push(['GR-SIM','模擬達標率落在理論值 ±3 標準誤內',`${pct(QA.gr.pw,2)} vs ${pct(QA.gr.th.win,2)}，z = ${QA.gr.z.toFixed(2)}（${num(QA.gr.M)} 人）`,Math.abs(QA.gr.z)<=3?'ok':'bad']);
+    const i=Math.round(+$('gr-i').value),N=Math.round(+$('gr-N').value),near=ruinTheory(i,N,0.5+1e-7).win;
+    rows.push(['GR-LIM','p → 50% 時公式連續退化為 i/N（邊界一致）',`p = 50.00001%：${near.toFixed(6)}，i/N = ${(i/N).toFixed(6)}`,Math.abs(near-i/N)<1e-4?'ok':'bad']);
+    rows.push(['GR-DUR','平均局數與理論期望局數比較',`模擬 ${num(QA.gr.dur,1)}，理論 ${num(QA.gr.th.dur,1)}`,'info']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+
+const dPi=PF.debounce(runPi,250),dMh=PF.debounce(runMonty,250),dGr=PF.debounce(runRuin,300);
+['pi-n'].forEach(id=>$(id).addEventListener('input',dPi));
+['mh-doors','mh-n','mh-know'].forEach(id=>$(id).addEventListener('input',dMh));
+['gr-i','gr-N','gr-p','gr-m'].forEach(id=>$(id).addEventListener('input',dGr));
+$('pi-seed').addEventListener('click',()=>{piSeed++;runPi();});
+$('mh-seed').addEventListener('click',()=>{mhSeed++;runMonty();});
+$('gr-seed').addEventListener('click',()=>{grSeed++;runRuin();});
+runPi();runMonty();runRuin();
+})();
+</script>
+</body>
+</html>

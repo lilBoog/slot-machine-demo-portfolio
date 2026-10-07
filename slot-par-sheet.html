@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+<title>金鯉躍門 PAR 表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap">
+<style>
+/* 版面：頂部「機台」試玩 + 規格書；下方依 PAR 表章節由上而下：輪帶 → RTP 拆解 → 模擬 → 敏感度 → 驗證 */
+:root{
+  --bg:#F3F2F0; --surface:#FFFFFF; --sunk:#E9E7E3; --ink:#1D1916; --muted:#625A53; --line:#D9D5CF;
+  --lacquer:#A82C1C; --lacquer-soft:#F3DCD6; --gold:#94690C; --gold-soft:#F2E5C2;
+  --jade:#1C7556; --jade-soft:#D4EDE2; --cab:#231C19; --cab-ink:#F5EDE3;
+  --f-display:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13100F; --surface:#1C1816; --sunk:#25201D; --ink:#EEE7DF; --muted:#A39A90; --line:#352E2A;
+  --lacquer:#E2654F; --lacquer-soft:#3B1C16; --gold:#DDB04D; --gold-soft:#3A2E14;
+  --jade:#5BBE94; --jade-soft:#15302A; --cab:#0B0908; --cab-ink:#F5EDE3; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#13100F; --surface:#1C1816; --sunk:#25201D; --ink:#EEE7DF; --muted:#A39A90; --line:#352E2A;
+  --lacquer:#E2654F; --lacquer-soft:#3B1C16; --gold:#DDB04D; --gold-soft:#3A2E14;
+  --jade:#5BBE94; --jade-soft:#15302A; --cab:#0B0908; --cab-ink:#F5EDE3; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:32px 64px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--lacquer)}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(30px,4.4vw,46px);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:24px;margin:0;text-wrap:balance}
+h3{font-size:13px;margin:0;color:var(--muted);font-weight:500;letter-spacing:.04em}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:28px;align-items:start;padding-bottom:28px;border-bottom:1px solid var(--line)}
+@media (max-width:900px){.hero{grid-template-columns:minmax(0,1fr)}}
+.hero-text{display:grid;gap:12px;align-content:start}
+.lede{max-width:62ch;color:var(--muted)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px}
+nav.toc a{font-size:13px;color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface)}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--lacquer);color:var(--lacquer);outline:none}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;max-width:560px}
+.facts div{background:var(--surface);padding:8px 12px;display:grid}
+.facts span:first-child{font-size:11.5px;color:var(--muted)}
+.facts span:last-child{font-family:var(--f-mono);font-size:15px}
+/* 機台 */
+.cabinet{background:var(--cab);color:var(--cab-ink);border-radius:14px;padding:16px;display:grid;gap:12px}
+.cab-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cab-top b{font-family:var(--f-display);font-size:18px;letter-spacing:.1em}
+.cab-top .mono{font-size:12px;opacity:.75}
+.reels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;background:#00000040;padding:8px;border-radius:10px}
+.cell{aspect-ratio:1/1;max-width:100%;display:grid;place-items:center;border-radius:8px;background:#F7F1E8;color:#2A211C;font-family:var(--f-display);font-weight:900;font-size:clamp(18px,3.4vw,28px);transition:transform .15s, box-shadow .15s;border:2px solid transparent}
+.cell.w{background:#B83A26;color:#FFF3E0}
+.cell.s{background:#D9A93A;color:#2A1A05}
+.cell.hi{border-color:#F6C64F;box-shadow:0 0 0 2px #F6C64F55;transform:translateY(-2px)}
+.cell.dim{opacity:.38}
+.cab-bar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:8px;align-items:center}
+.cab-bar div{display:grid;font-size:11px;opacity:.85}
+.cab-bar div b{font-family:var(--f-mono);font-size:16px;font-weight:500;opacity:1}
+.spin{font-family:var(--f-body);font-weight:700;font-size:15px;background:#D9A93A;color:#2A1A05;border:none;border-radius:999px;padding:10px 22px;cursor:pointer}
+.spin:hover{filter:brightness(1.08)}
+.spin:focus-visible{outline:2px solid #F6C64F;outline-offset:2px}
+.cab-log{font-size:12.5px;min-height:3.2em;font-family:var(--f-mono);opacity:.9;overflow-wrap:anywhere}
+/* 章節 */
+section{padding-top:44px;display:grid;gap:16px}
+.sec-head{display:grid;gap:6px}
+.sec-head p{color:var(--muted);max-width:74ch}
+.spec{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
+.rules{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.rules{grid-template-columns:minmax(0,1fr)}}
+.rules ol{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:14px}
+.lines{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.ln{display:grid;gap:3px;justify-items:center}
+.ln svg{width:100%;max-width:70px;height:auto}
+.ln span{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--muted);font-size:12px;background:var(--sunk)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+tfoot td{font-weight:700;background:var(--sunk);font-family:var(--f-mono)}
+td input[type=number]{width:62px}
+.sym{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:5px;background:var(--sunk);font-family:var(--f-display);font-weight:900;font-size:14px;margin-right:6px;vertical-align:middle}
+.sym.w{background:var(--lacquer);color:var(--surface)}
+.sym.s{background:var(--gold);color:var(--surface)}
+input[type=number]{font-family:var(--f-mono);font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--sunk);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+input[type=number]:focus-visible,button:focus-visible{outline:2px solid var(--lacquer);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--lacquer);background:var(--lacquer-soft)}
+.two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.field{display:grid;grid-template-columns:1fr 86px;align-items:center;gap:8px;font-size:13px}
+.field small{display:block;color:var(--muted);font-size:11.5px}
+.field input{width:100%}
+button.btn{font-family:var(--f-body);font-size:13px;border:1px solid var(--lacquer);color:var(--lacquer);background:transparent;border-radius:6px;padding:6px 12px;cursor:pointer}
+button.btn:hover{background:var(--lacquer-soft)}
+button.btn.solid{background:var(--lacquer);color:var(--surface)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.errors{font-size:12.5px;color:var(--lacquer);display:grid;gap:2px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--surface);padding:12px 14px;display:grid;gap:2px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:21px;font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat .s{font-size:11.5px;color:var(--muted);font-family:var(--f-mono)}
+.stat.hl .v{color:var(--lacquer)}
+.stack{display:flex;height:26px;border-radius:6px;overflow:hidden;background:var(--sunk)}
+.stack div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.hbar{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.hbar i{display:block;height:7px;border-radius:3px;background:var(--lacquer);min-width:1px}
+.heat td.hv{font-family:var(--f-mono);font-size:12px}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11.5px;padding:1px 8px;border-radius:999px}
+.pill.ok{background:var(--jade-soft);color:var(--jade)}
+.pill.bad{background:var(--lacquer-soft);color:var(--lacquer)}
+.pill.info{background:var(--gold-soft);color:var(--gold)}
+.qa{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.qa-row{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:baseline}
+.qa-row:last-child{border-bottom:none}
+.qa-row .id{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.qa-row .d{font-size:13.5px;min-width:0}
+.qa-row .d small{display:block;color:var(--muted);font-family:var(--f-mono);font-size:11.5px;overflow-wrap:anywhere}
+@media (max-width:520px){.qa-row{grid-template-columns:minmax(0,1fr) auto}.qa-row .id{grid-column:1/-1}}
+.progress{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--lacquer);transition:width .1s}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<a href="index.html" style="display:inline-block;font-size:13px;text-decoration:none;color:var(--muted);margin-bottom:18px">← 作品集首頁</a>
+<header class="hero">
+  <div class="hero-text">
+    <div class="eyebrow">作品集 Demo · 博弈機台數學模型</div>
+    <h1>金鯉躍門 PAR 表</h1>
+    <p class="lede">一台 5 軸 × 3 列、20 條固定線的虛構視訊老虎機，從輪帶配置寫到完整的 PAR 表：精確 RTP 拆解（主遊戲連線、分散符號、免費遊戲）、30 萬轉模擬驗證、波動度指標、輪帶敏感度分析，以及送審前的規格檢查。右邊的機台使用同一組輪帶，可以直接試轉。</p>
+    <div class="facts" id="facts"></div>
+    <nav class="toc" aria-label="章節">
+      <a href="#rules">遊戲規格</a><a href="#reels">輪帶與賠率</a><a href="#rtp">RTP 拆解</a><a href="#sim">模擬與波動度</a><a href="#sens">敏感度分析</a><a href="#qa">送審檢查</a>
+    </nav>
+  </div>
+  <div class="cabinet" aria-label="試玩機台">
+    <div class="cab-top"><b>金鯉躍門</b><span class="mono" id="cab-mode">主遊戲 · 20 線 · 每線 1</span></div>
+    <div class="reels" id="grid"></div>
+    <div class="cab-bar">
+      <div>餘額<b id="cab-bal">10,000</b></div>
+      <div>總押注<b>20</b></div>
+      <div>本局贏分<b id="cab-win">0</b></div>
+      <button class="spin" id="cab-spin" type="button">轉動</button>
+    </div>
+    <div class="cab-log" id="cab-log" aria-live="polite">按「轉動」試玩。贏分線會亮起，3 個以上「門」觸發免費遊戲。</div>
+  </div>
+</header>
+
+<!-- 規格 -->
+<section id="rules">
+  <div class="sec-head">
+    <span class="spec">規格 R-01 · 遊戲規則</span>
+    <h2>遊戲規格</h2>
+  </div>
+  <div class="rules">
+    <div class="card">
+      <h3>規則</h3>
+      <ol>
+        <li>20 條固定連線，每線押 1，總押注 20。連線由最左軸起連續計算，每條線只取最高的一種贏分。</li>
+        <li><span class="sym w">鯉</span>錦鯉為百搭，可替代「門」以外的所有符號，自己也有賠率。只出現在第 2–5 軸。</li>
+        <li><span class="sym s">門</span>龍門為分散符號，出現在畫面任意位置即計算，賠付以總押注為倍數。同一軸的視窗內最多出現 1 個。</li>
+        <li>3 個以上「門」觸發 <b id="r-fs">10</b> 次免費遊戲，免費遊戲所有贏分 ×<b id="r-mult">2</b>，免費遊戲中可再次觸發。</li>
+        <li>停輪結果由各軸獨立、均勻隨機決定。</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>20 條連線（由上而下為第 1–3 列）</h3>
+      <div class="lines" id="lines"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 輪帶 -->
+<section id="reels">
+  <div class="sec-head">
+    <span class="spec">規格 R-02 · 輪帶配置與賠率表</span>
+    <h2>輪帶與賠率</h2>
+    <p>每格是該符號在該軸輪帶上的停點數。改任何數字，下方的 RTP、模擬與敏感度都會重算。「依目標校準」會把整張賠率表等比例縮放到目標 RTP，再四捨五入成整數。</p>
+  </div>
+  <div class="two">
+    <div class="tbl-wrap">
+      <table aria-label="輪帶停點數">
+        <thead><tr><th>符號</th><th>第 1 軸</th><th>第 2 軸</th><th>第 3 軸</th><th>第 4 軸</th><th>第 5 軸</th></tr></thead>
+        <tbody id="t-cnt"></tbody>
+        <tfoot id="t-len"></tfoot>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table aria-label="連線賠率表">
+        <thead><tr><th>符號</th><th>3 連</th><th>4 連</th><th>5 連</th></tr></thead>
+        <tbody id="t-pay"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h3>分散符號與免費遊戲</h3>
+      <div class="row"><span class="spec" id="calib-out"></span><button class="btn solid" id="calib" type="button">依目標校準賠率表</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 24px">
+      <div class="field"><label for="sc3">3 個「門」<small>× 總押注</small></label><input type="number" id="sc3" value="2" min="0" step="1"></div>
+      <div class="field"><label for="sc4">4 個「門」<small>× 總押注</small></label><input type="number" id="sc4" value="10" min="0" step="1"></div>
+      <div class="field"><label for="sc5">5 個「門」<small>× 總押注</small></label><input type="number" id="sc5" value="50" min="0" step="1"></div>
+      <div class="field"><label for="fs">免費遊戲次數</label><input type="number" id="fs" value="10" min="1" max="50" step="1"></div>
+      <div class="field"><label for="mult">免費遊戲倍數</label><input type="number" id="mult" value="2" min="1" max="10" step="1"></div>
+      <div class="field"><label for="target">目標 RTP %<small>核准誤差 ±0.5%</small></label><input type="number" id="target" value="97" min="80" max="99.5" step="0.5"></div>
+    </div>
+    <div class="errors" id="cfg-err" role="alert"></div>
+  </div>
+</section>
+
+<!-- RTP -->
+<section id="rtp">
+  <div class="sec-head">
+    <span class="spec">PAR-1 · 理論返還率</span>
+    <h2>RTP 拆解</h2>
+    <p>主遊戲連線用全組合窮舉：每條線在各軸的符號分布彼此獨立，所以 20 條線的期望值相同，窮舉一條線的所有符號組合即可得精確值。免費遊戲含重觸發，期望場次為 F ÷ (1 − F·P)。</p>
+  </div>
+  <div class="stats" id="rtp-stats"></div>
+  <div class="card">
+    <h3>RTP 組成</h3>
+    <div class="stack" id="rtp-stack" role="img" aria-label="RTP 組成比例"></div>
+    <div class="legend" id="rtp-legend"></div>
+    <div class="formula spec" id="rtp-formula" style="overflow-x:auto;white-space:nowrap"></div>
+  </div>
+  <div class="tbl-wrap">
+    <table aria-label="各符號連線 RTP 貢獻">
+      <thead><tr><th>主遊戲連線</th><th>3 連機率</th><th>4 連機率</th><th>5 連機率</th><th>每線命中 1/N</th><th>RTP 貢獻</th></tr></thead>
+      <tbody id="t-contrib"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 模擬 -->
+<section id="sim">
+  <div class="sec-head">
+    <span class="spec">PAR-2 · 蒙地卡羅驗證</span>
+    <h2>模擬與波動度</h2>
+    <p>用實際排好的輪帶（分散符號等距擺放，其餘符號以固定種子洗牌）跑完整遊戲流程，包含免費遊戲與重觸發。命中率、標準差這類需要 20 條線一起看的指標，以模擬結果為準。</p>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <span class="spec" id="sim-status">準備中…</span>
+      <div class="row">
+        <label class="spec" for="sim-n">轉數</label><input type="number" id="sim-n" value="300000" min="10000" max="2000000" step="50000" style="width:110px">
+        <button class="btn" id="sim-run" type="button">換一組種子重跑</button>
+      </div>
+    </div>
+    <div class="progress"><i id="sim-bar"></i></div>
+  </div>
+  <div class="stats" id="sim-stats"></div>
+  <div class="tbl-wrap">
+    <table aria-label="單局贏分分布">
+      <thead><tr><th>單局贏分（× 總押注）</th><th>出現機率</th><th>約每 N 局一次</th><th>佔 RTP</th></tr></thead>
+      <tbody id="t-dist"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 敏感度 -->
+<section id="sens">
+  <div class="sec-head">
+    <span class="spec">PAR-3 · 調參工具</span>
+    <h2>輪帶敏感度分析</h2>
+    <p>每一格代表「在該軸多放 1 個停點」後 RTP 的變化（百分點）。調整 RTP 時可以直接找影響最大或最小的位置下手，例如要微調 0.1% 就挑數值接近的格子。綠色提高 RTP，紅色降低。</p>
+  </div>
+  <div class="tbl-wrap heat">
+    <table aria-label="敏感度矩陣">
+      <thead><tr><th>符號 +1 停點</th><th>第 1 軸</th><th>第 2 軸</th><th>第 3 軸</th><th>第 4 軸</th><th>第 5 軸</th></tr></thead>
+      <tbody id="t-sens"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- QA -->
+<section id="qa">
+  <div class="sec-head">
+    <span class="spec">Q-01 · 送審前檢查</span>
+    <h2>送審檢查</h2>
+    <p>對應交給 QA 與認證實驗室的檢查項目。參數變動或模擬完成後自動重跑。</p>
+  </div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>虛構機台與示範參數，與任何實際產品無關。主遊戲 RTP 以單線全組合窮舉求精確值，分散符號以各軸出現機率的卜瓦松二項分布計算，模擬使用可重現的 mulberry32 亂數產生器。</footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=(v,d=2)=>(v*100).toFixed(d)+'%';
+const num=(v,d=0)=>Number(v).toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d});
+const oneIn=p=>p>0?'1 / '+num(1/p,p>0.01?1:0):'—';
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- 資料 ---------- */
+const SYM=[{k:'W',g:'鯉',n:'錦鯉（百搭）',c:'w'},{k:'S',g:'門',n:'龍門（分散）',c:'s'},{k:'H1',g:'寶',n:'元寶'},{k:'H2',g:'意',n:'如意'},{k:'H3',g:'燈',n:'燈籠'},{k:'H4',g:'錢',n:'銅錢'},{k:'A',g:'A',n:'A'},{k:'K',g:'K',n:'K'},{k:'Q',g:'Q',n:'Q'},{k:'J',g:'J',n:'J'}];
+const NS=SYM.length;
+const CNT0=[[0,2,3,3,2],[1,2,2,2,1],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4],[4,4,4,4,4],[5,5,5,5,5],[5,5,5,5,5],[6,6,6,6,6],[6,6,6,6,6]];
+const PAY0={0:[60,250,1250],2:[50,200,1000],3:[30,125,500],4:[20,75,300],5:[15,60,250],6:[10,30,125],7:[10,25,100],8:[8,20,75],9:[6,20,60]};
+const LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[1,0,1,2,1],[1,2,1,0,1],[0,1,1,1,0],[2,1,1,1,2],[0,1,0,1,0],[2,1,2,1,2],[1,1,0,1,1],[1,1,2,1,1],[0,0,2,0,0],[2,2,0,2,2],[0,2,2,2,0]];
+const NL=LINES.length;
+const symTag=i=>`<span class="sym ${SYM[i].c||''}">${SYM[i].g}</span>`;
+
+/* ---------- 表格建置 ---------- */
+$('t-cnt').innerHTML=SYM.map((s,i)=>`<tr><td>${symTag(i)}${s.n}</td>${[0,1,2,3,4].map(r=>`<td><input type="number" id="c-${i}-${r}" value="${CNT0[i][r]}" min="0" max="99" step="1" aria-label="${s.n} 第 ${r+1} 軸停點數"></td>`).join('')}</tr>`).join('');
+$('t-pay').innerHTML=SYM.map((s,i)=>i===1?'':`<tr><td>${symTag(i)}${s.n}</td>${[0,1,2].map(j=>`<td><input type="number" id="p-${i}-${j}" value="${PAY0[i][j]}" min="0" step="1" aria-label="${s.n} ${j+3} 連賠率"></td>`).join('')}</tr>`).join('');
+$('lines').innerHTML=LINES.map((ln,i)=>{let s='<svg viewBox="0 0 50 30" aria-hidden="true">';for(let r=0;r<5;r++)for(let y=0;y<3;y++)s+=`<rect x="${r*10+1}" y="${y*10+1}" width="8" height="8" rx="1.5" fill="${ln[r]===y?'var(--lacquer)':'var(--sunk)'}"/>`;
+  s+=`<polyline fill="none" stroke="var(--lacquer)" stroke-width="1.2" points="${ln.map((y,r)=>(r*10+5)+','+(y*10+5)).join(' ')}"/></svg>`;return `<div class="ln">${s}<span>#${i+1}</span></div>`;}).join('');
+
+/* ---------- 讀設定 ---------- */
+function readCfg(){
+  const errs=[],bad=new Set();const v=id=>parseFloat($(id).value);
+  const cnt=[];for(let i=0;i<NS;i++){cnt.push([]);for(let r=0;r<5;r++){const x=v(`c-${i}-${r}`);if(!(Number.isInteger(x)&&x>=0&&x<=99)){bad.add(`c-${i}-${r}`);}cnt[i].push(Number.isInteger(x)&&x>=0?x:0);}}
+  if([...bad].some(id=>id.startsWith('c-')))errs.push('停點數必須是 0 到 99 的整數。');
+  const pay=[];for(let i=0;i<NS;i++){pay.push([0,0,0,0,0,0]);if(i===1)continue;for(let j=0;j<3;j++){const x=v(`p-${i}-${j}`);if(!(x>=0)){bad.add(`p-${i}-${j}`);}pay[i][j+3]=x>=0?x:0;}}
+  if([...bad].some(id=>id.startsWith('p-')))errs.push('賠率不可為負數或空白。');
+  const sc=[0,0,0,v('sc3'),v('sc4'),v('sc5')];['sc3','sc4','sc5'].forEach((id,j)=>{if(!(sc[j+3]>=0)){bad.add(id);errs.push('分散符號賠率不可為負數。');}});
+  const fs=v('fs'),mult=v('mult'),target=v('target')/100;
+  if(!(Number.isInteger(fs)&&fs>=1&&fs<=50)){bad.add('fs');errs.push('免費遊戲次數需為 1 到 50 的整數。');}
+  if(!(mult>=1&&mult<=10)){bad.add('mult');errs.push('免費遊戲倍數需介於 1 到 10。');}
+  if(!(target>=.8&&target<=.995)){bad.add('target');errs.push('目標 RTP 需介於 80% 到 99.5%。');}
+  const L=[0,1,2,3,4].map(r=>cnt.reduce((a,row)=>a+row[r],0));
+  L.forEach((l,r)=>{if(l<15||l>250)errs.push(`第 ${r+1} 軸總停點數 ${l} 超出 15–250 的範圍。`);});
+  L.forEach((l,r)=>{if(cnt[1][r]*3>l)errs.push(`第 ${r+1} 軸「門」太多：要讓視窗內最多 1 個，停點數需 ≥ 門數 × 3。`);});
+  document.querySelectorAll('#reels input').forEach(el=>el.setAttribute('aria-invalid',bad.has(el.id)));
+  return {cnt,pay,sc,fs,mult,target,L,errs};
+}
+
+/* ---------- 單線評估（W=0, S=1） ---------- */
+let PS=-1,PK=0;
+function evalLine(b,pay){
+  let kw=0;while(kw<5&&b[kw]===0)kw++;
+  const pw=kw>=3?pay[0][kw]:0;
+  if(kw===5){PS=0;PK=5;return pw;}
+  const s=b[kw];
+  if(s===1){PS=pw>0?0:-1;PK=kw;return pw;}
+  let k=kw;while(k<5&&(b[k]===s||b[k]===0))k++;
+  const ps=k>=3?pay[s][k]:0;
+  if(ps>=pw){PS=ps>0?s:-1;PK=k;return ps;}
+  PS=0;PK=kw;return pw;
+}
+
+/* ---------- 解析解 ---------- */
+function analytic(cfg,track){
+  const {cnt,pay,sc,fs,mult,L}=cfg;
+  const nz=[0,1,2,3,4].map(r=>{const a=[];for(let i=0;i<NS;i++)if(cnt[i][r]>0)a.push([i,cnt[i][r]/L[r]]);return a;});
+  let ev=0,psum=0;const b=[0,0,0,0,0];
+  const prob=track?SYM.map(()=>[0,0,0,0,0,0]):null;
+  for(const [a0,q0] of nz[0]){b[0]=a0;
+   for(const [a1,q1] of nz[1]){b[1]=a1;const p01=q0*q1;
+    for(const [a2,q2] of nz[2]){b[2]=a2;const p2=p01*q2;
+     for(const [a3,q3] of nz[3]){b[3]=a3;const p3=p2*q3;
+      for(const [a4,q4] of nz[4]){b[4]=a4;const p=p3*q4;psum+=p;
+        const x=evalLine(b,pay);if(x>0){ev+=p*x;if(track)prob[PS][PK]+=p;}}}}}}
+  const q=[0,1,2,3,4].map(r=>3*cnt[1][r]/L[r]);
+  let dist=[1,0,0,0,0,0];
+  for(const qi of q){const nd=[0,0,0,0,0,0];for(let i=0;i<6;i++){nd[i]+=dist[i]*(1-qi);if(i<5)nd[i+1]+=dist[i]*qi;}dist=nd;}
+  const scEV=dist[3]*sc[3]+dist[4]*sc[4]+dist[5]*sc[5];
+  const pt=dist[3]+dist[4]+dist[5];
+  const R0=ev+scEV;
+  const conv=fs*pt<1;
+  const E=conv?fs/(1-fs*pt):Infinity;
+  const fg=conv?pt*E*R0*mult:Infinity;
+  return {ev,psum,scEV,pt,R0,E,fg,total:R0+fg,dist,prob};
+}
+
+/* ---------- 輪帶排列 ---------- */
+function buildStrips(cfg,seed){
+  const r=mulberry32(seed);
+  return [0,1,2,3,4].map(reel=>{
+    const L=cfg.L[reel],arr=new Array(L).fill(-1),nS=cfg.cnt[1][reel];
+    for(let i=0;i<nS;i++)arr[Math.floor(i*L/nS)]=1;
+    const rest=[];for(let i=0;i<NS;i++)if(i!==1)for(let c=0;c<cfg.cnt[i][reel];c++)rest.push(i);
+    for(let i=rest.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]];}
+    let k=0;for(let i=0;i<L;i++)if(arr[i]===-1)arr[i]=rest[k++];
+    return arr;});
+}
+function scatterGap(strips){let min=Infinity;strips.forEach(s=>{const pos=[];s.forEach((x,i)=>{if(x===1)pos.push(i);});for(let i=0;i<pos.length;i++){const nx=i+1<pos.length?pos[i+1]:pos[0]+s.length;if(pos.length>1)min=Math.min(min,nx-pos[i]);}});return min;}
+
+/* ---------- 單次轉動 ---------- */
+const WIN=[[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];const LB=[0,0,0,0,0];
+function spinOnce(strips,cfg,rnd,detail){
+  for(let r=0;r<5;r++){const s=strips[r],L=s.length,st=Math.floor(rnd()*L);WIN[r][0]=s[st];WIN[r][1]=s[(st+1)%L];WIN[r][2]=s[(st+2)%L];}
+  let win=0,n=0;const wins=detail?[]:null;
+  for(let l=0;l<NL;l++){const ln=LINES[l];for(let r=0;r<5;r++)LB[r]=WIN[r][ln[r]];const x=evalLine(LB,cfg.pay);if(x>0){win+=x;if(detail)wins.push({l,s:PS,k:PK,x});}}
+  for(let r=0;r<5;r++)if(WIN[r][0]===1||WIN[r][1]===1||WIN[r][2]===1)n++;
+  win+=(cfg.sc[n]||0)*NL;
+  return detail?{win,n,wins,grid:WIN.map(c=>c.slice())}:{win,n};
+}
+
+/* ---------- 模擬 ---------- */
+const BUCKETS=[[0,0,'0（未中）'],[1e-9,1,'0 – 1 倍'],[1,5,'1 – 5 倍'],[5,20,'5 – 20 倍'],[20,100,'20 – 100 倍'],[100,500,'100 – 500 倍'],[500,Infinity,'500 倍以上']];
+let simToken=0,simSeed=88,SIM=null;
+function runSim(){
+  const tok=++simToken;SIM=null;
+  if(!A||A.errs||!isFinite(A.total)){$('sim-status').textContent='設定有誤或免費遊戲不收斂，未執行模擬。';renderQA();return;}
+  const N=Math.max(10000,Math.min(2000000,Math.round(parseFloat($('sim-n').value)||300000)));
+  const cfg=CFG,strips=STRIPS,rnd=mulberry32(simSeed),bet=NL;
+  const acc={n:0,sum:0,sum2:0,hit:0,max:0,trig:0,fgSpins:0,bc:new Array(BUCKETS.length).fill(0),bw:new Array(BUCKETS.length).fill(0)};
+  const t0=performance.now();
+  function chunk(){
+    if(tok!==simToken)return;
+    const end=Math.min(N,acc.n+20000);
+    for(;acc.n<end;acc.n++){
+      const r=spinOnce(strips,cfg,rnd,false);let win=r.win;
+      if(r.n>=3){acc.trig++;let left=cfg.fs,guard=0;while(left>0&&guard<5000){left--;guard++;acc.fgSpins++;const f=spinOnce(strips,cfg,rnd,false);win+=f.win*cfg.mult;if(f.n>=3)left+=cfg.fs;}}
+      const m=win/bet;acc.sum+=m;acc.sum2+=m*m;if(m>0)acc.hit++;if(m>acc.max)acc.max=m;
+      let bi=0;if(m>0){for(bi=1;bi<BUCKETS.length;bi++)if(m<BUCKETS[bi][1])break;if(bi>=BUCKETS.length)bi=BUCKETS.length-1;}
+      acc.bc[bi]++;acc.bw[bi]+=m;
+    }
+    $('sim-bar').style.width=(acc.n/N*100).toFixed(1)+'%';
+    $('sim-status').textContent=`模擬中 ${num(acc.n)} / ${num(N)} 局…`;
+    if(acc.n<N){setTimeout(chunk,0);return;}
+    const rtp=acc.sum/N,sd=Math.sqrt(Math.max(0,acc.sum2/N-rtp*rtp)),se=sd/Math.sqrt(N);
+    SIM={N,rtp,sd,se,hit:acc.hit/N,max:acc.max,trig:acc.trig,fgAvg:acc.trig?acc.fgSpins/acc.trig:0,bc:acc.bc,bw:acc.bw,ms:performance.now()-t0};
+    renderSim();renderQA();
+  }
+  $('sim-bar').style.width='0%';setTimeout(chunk,0);
+}
+function renderSim(){
+  const s=SIM;const vi=1.645*s.sd;const lvl=vi<5?'低':vi<10?'中':vi<20?'中高':'高';
+  const z=(s.rtp-A.total)/s.se;
+  $('sim-status').textContent=`完成 ${num(s.N)} 局（${num(s.ms/1000,1)} 秒），種子 ${simSeed}`;
+  $('sim-stats').innerHTML=[
+    ['模擬 RTP',pct(s.rtp,2),'理論 '+pct(A.total,2)+'，差 '+(z>=0?'+':'')+num(z,2)+' SE','hl'],
+    ['命中率',pct(s.hit,2),'約每 '+num(1/s.hit,2)+' 局中一次',''],
+    ['單局標準差',num(s.sd,2),'× 總押注',''],
+    ['波動度指標 VI',num(vi,2),'90% 信賴（1.645σ）· '+lvl+'波動',''],
+    ['免費遊戲觸發',s.trig?'1 / '+num(s.N/s.trig,0):'—','理論 '+oneIn(A.pt),''],
+    ['平均免費場次',num(s.fgAvg,2),'理論 '+num(A.E,2),''],
+    ['最高單局贏分',num(s.max,1)+' 倍','× 總押注',''],
+    ['95% 信賴區間',pct(s.rtp-1.96*s.se,2)+' – '+pct(s.rtp+1.96*s.se,2),'模擬 RTP','']
+  ].map(([k,v,t,c])=>`<div class="stat ${c}"><span class="k">${k}</span><span class="v">${v}</span><span class="s">${t}</span></div>`).join('');
+  const maxW=Math.max(...s.bw.map(w=>w/s.N),1e-9);
+  $('t-dist').innerHTML=BUCKETS.map((b,i)=>{const p=s.bc[i]/s.N,w=s.bw[i]/s.N;return `<tr><td>${b[2]}</td><td class="mono">${pct(p,3)}</td><td class="mono">${p>0?num(1/p,p>.01?1:0):'—'}</td><td><div class="hbar"><i style="width:${(w/maxW*90).toFixed(1)}px"></i><span class="mono">${pct(w,2)}</span></div></td></tr>`;}).join('');
+}
+
+/* ---------- 敏感度 ---------- */
+let sensToken=0;
+function runSens(){
+  const tok=++sensToken;const base=A.total;const cfg=CFG;const out=SYM.map(()=>new Array(5).fill(null));
+  $('t-sens').innerHTML=SYM.map((s,i)=>`<tr><td>${symTag(i)}${s.n}</td>${[0,1,2,3,4].map(r=>`<td class="hv" id="h-${i}-${r}">…</td>`).join('')}</tr>`).join('');
+  let r=0;
+  function step(){
+    if(tok!==sensToken)return;
+    for(let i=0;i<NS;i++){
+      const cnt=cfg.cnt.map(row=>row.slice());cnt[i][r]++;
+      const L=cfg.L.slice();L[r]++;
+      const el=$(`h-${i}-${r}`);
+      if(i===1&&cnt[1][r]*3>L[r]){el.textContent='—';el.title='違反分散符號間距';continue;}
+      const a=analytic({...cfg,cnt,L},false);
+      out[i][r]=isFinite(a.total)?a.total-base:null;
+    }
+    if(++r<5)setTimeout(step,0);else paint();
+  }
+  function paint(){
+    let mx=1e-9;out.forEach(row=>row.forEach(v=>{if(v!=null)mx=Math.max(mx,Math.abs(v));}));
+    out.forEach((row,i)=>row.forEach((v,r)=>{const el=$(`h-${i}-${r}`);if(v==null){if(el.textContent==='…')el.textContent='∞';return;}
+      const a=Math.round(Math.abs(v)/mx*55);el.textContent=(v>=0?'+':'')+(v*100).toFixed(2);
+      el.style.background=`color-mix(in srgb, ${v>=0?'var(--jade)':'var(--lacquer)'} ${a}%, transparent)`;}));
+  }
+  setTimeout(step,30);
+}
+
+/* ---------- 主渲染 ---------- */
+let CFG=null,A=null,STRIPS=null;
+function render(){
+  CFG=readCfg();
+  $('cfg-err').innerHTML=CFG.errs.map(e=>`<div>${esc(e)}</div>`).join('');
+  $('t-len').innerHTML=`<tr><td>總停點數</td>${CFG.L.map(l=>`<td>${l}</td>`).join('')}</tr>`;
+  $('r-fs').textContent=CFG.fs;$('r-mult').textContent=CFG.mult;
+  if(CFG.errs.length){A={errs:true};simToken++;sensToken++;$('sim-status').textContent='設定有誤，未執行模擬。';renderQA();return;}
+  A=analytic(CFG,true);
+  STRIPS=buildStrips(CFG,20261007);
+  const t=A.total,conv=isFinite(t);
+  $('facts').innerHTML=[['理論 RTP',conv?pct(t,2):'不收斂'],['免費遊戲觸發',oneIn(A.pt)],['輪帶長度',CFG.L.join(' / ')]].map(([k,v])=>`<div><span>${k}</span><span>${v}</span></div>`).join('');
+  const gap=t-CFG.target;
+  $('rtp-stats').innerHTML=[
+    ['總 RTP',conv?pct(t,3):'∞','目標 '+pct(CFG.target,1)+(conv?'，差 '+(gap>=0?'+':'')+pct(gap,2):''),'hl'],
+    ['主遊戲連線',pct(A.ev,2),'單線期望 × 20 線 ÷ 總押注 20',''],
+    ['分散符號賠付',pct(A.scEV,2),'3/4/5 個門',''],
+    ['免費遊戲',conv?pct(A.fg,2):'∞','觸發 '+oneIn(A.pt)+'，平均 '+(conv?num(A.E,2):'∞')+' 場','']
+  ].map(([k,v,s,c])=>`<div class="stat ${c}"><span class="k">${k}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('');
+  const parts=[['主遊戲連線',A.ev,'var(--lacquer)'],['分散符號',A.scEV,'var(--gold)'],['免費遊戲',conv?A.fg:0,'var(--jade)']];
+  const tot=parts.reduce((a,p)=>a+p[1],0)||1;
+  $('rtp-stack').innerHTML=parts.map(p=>`<div style="width:${(p[1]/tot*100).toFixed(2)}%;background:${p[2]}"></div>`).join('');
+  $('rtp-legend').innerHTML=parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]} <b class="mono">${pct(p[1]/tot,1)}</b></span>`).join('');
+  $('rtp-formula').textContent=conv?`RTP = 連線 ${pct(A.ev,2)} + 分散 ${pct(A.scEV,2)} + P(觸發) ${A.pt.toFixed(5)} × E[場次] ${A.E.toFixed(3)} × 單場 ${pct(A.R0,2)} × 倍數 ${CFG.mult} = ${pct(t,3)}`:`免費遊戲重觸發不收斂：F × P = ${(CFG.fs*A.pt).toFixed(3)} ≥ 1`;
+  const rows=SYM.map((s,i)=>i===1?null:{i,p:A.prob[i],c:A.prob[i][3]*CFG.pay[i][3]+A.prob[i][4]*CFG.pay[i][4]+A.prob[i][5]*CFG.pay[i][5]}).filter(Boolean);
+  const mx=Math.max(...rows.map(r=>r.c),1e-9);
+  $('t-contrib').innerHTML=rows.map(r=>{const ph=r.p[3]+r.p[4]+r.p[5];const f=x=>x<1e-4?(x*100).toExponential(2)+'%':pct(x,3);
+    return `<tr><td>${symTag(r.i)}${SYM[r.i].n}</td><td class="mono">${f(r.p[3])}</td><td class="mono">${f(r.p[4])}</td><td class="mono">${f(r.p[5])}</td><td class="mono">${ph>0?num(1/ph,0):'—'}</td><td><div class="hbar"><i style="width:${(r.c/mx*90).toFixed(1)}px"></i><span class="mono">${pct(r.c,2)}</span></div></td></tr>`;}).join('');
+  resetCab();renderQA();runSim();runSens();
+}
+
+function calibrate(){
+  const cfg=readCfg();if(cfg.errs.length)return;
+  const a=analytic(cfg,false);if(!isFinite(a.total)){$('calib-out').textContent='免費遊戲不收斂，無法校準。';return;}
+  const k=cfg.target/a.total;
+  for(let i=0;i<NS;i++){if(i===1)continue;for(let j=0;j<3;j++)$(`p-${i}-${j}`).value=Math.max(1,Math.round(cfg.pay[i][j+3]*k));}
+  ['sc3','sc4','sc5'].forEach((id,j)=>{$(id).value=Math.max(1,Math.round(cfg.sc[j+3]*k));});
+  $('calib-out').textContent=`賠率表 × ${k.toFixed(4)} 後取整`;
+  render();
+}
+
+/* ---------- 送審檢查 ---------- */
+function renderQA(){
+  const rows=[];const add=(id,d,detail,st)=>rows.push({id,d,detail,st});
+  if(!CFG||CFG.errs.length){add('Q-IN','設定值合法',CFG?CFG.errs.join(' '):'—','bad');}
+  else{
+    add('Q-IN','設定值合法','停點為 0–99 整數、輪帶長度 15–250、賠率 ≥ 0','ok');
+    add('Q-SUM','單線全組合機率總和 = 1','Σ = '+A.psum.toFixed(12),Math.abs(A.psum-1)<1e-9?'ok':'bad');
+    const g=STRIPS?scatterGap(STRIPS):Infinity;
+    add('Q-GAP','分散符號間距 ≥ 3（每軸視窗最多 1 個門）','實際排列最小間距 '+(isFinite(g)?g:'—（每軸至多 1 個）'),g>=3?'ok':'bad');
+    add('Q-FG','免費遊戲重觸發收斂（F × P < 1）',`F × P = ${CFG.fs} × ${A.pt.toFixed(5)} = ${(CFG.fs*A.pt).toFixed(4)}`,CFG.fs*A.pt<1?'ok':'bad');
+    if(isFinite(A.total)){const gap=A.total-CFG.target;add('Q-RTP','理論 RTP 落在核准範圍（目標 ±0.5%）',`${pct(A.total,3)}，目標 ${pct(CFG.target,1)}，差 ${(gap>=0?'+':'')+pct(gap,3)}`,Math.abs(gap)<=.005?'ok':'bad');}
+    if(SIM){const z=(SIM.rtp-A.total)/SIM.se;add('Q-SIM','模擬 RTP 落在理論值 ±3 標準誤內',`(${pct(SIM.rtp,3)} − ${pct(A.total,3)}) / SE ${pct(SIM.se,3)} = ${z.toFixed(2)}`,Math.abs(z)<=3?'ok':'bad');}
+    else add('Q-SIM','模擬 RTP 落在理論值 ±3 標準誤內','模擬尚未完成','info');
+    const w1=CFG.cnt[0][0];add('Q-W1','第 1 軸不放百搭（設計規則）',w1?`第 1 軸有 ${w1} 個錦鯉`:'第 1 軸錦鯉數 0',w1?'bad':'ok');
+    const top=Math.max(...CFG.pay.map(p=>p[5]));const ub=(top*NL+CFG.sc[5]*NL)/NL;
+    add('Q-MAX','單轉理論最高贏分（主遊戲）',`20 線全中最高 5 連 ${top} + 5 個門 ${CFG.sc[5]}× = ${num(ub,0)} 倍總押注；免費遊戲中再 ×${CFG.mult}`,'info');
+    if(SIM)add('Q-CAP','模擬最高單局贏分低於 5,000 倍上限',`觀測最高 ${num(SIM.max,1)} 倍`,SIM.max<=5000?'ok':'bad');
+  }
+  const pass=rows.filter(r=>r.st==='ok').length,fail=rows.filter(r=>r.st==='bad').length,info=rows.filter(r=>r.st==='info').length;
+  $('qa-sum').innerHTML=`<span class="pill ${fail?'bad':'ok'}">${fail?fail+' 項未通過':'全部通過'}</span><span class="spec">${pass} 通過 · ${fail} 未通過 · ${info} 項提示</span>`;
+  const lab={ok:'通過',bad:'未通過',info:'提示'};
+  $('qa-list').innerHTML=rows.map(r=>`<div class="qa-row"><span class="id">${r.id}</span><span class="d">${esc(r.d)}<small>${esc(r.detail)}</small></span><span class="pill ${r.st}">${lab[r.st]}</span></div>`).join('');
+}
+
+/* ---------- 試玩機台 ---------- */
+const cab={bal:10000,fg:0,fgWin:0,rnd:mulberry32((Date.now()%1e9)|0)};
+function drawGrid(grid,hi){let h='';for(let y=0;y<3;y++)for(let r=0;r<5;r++){const s=grid[r][y];const on=hi&&hi.has(r+'-'+y);h+=`<div class="cell ${SYM[s].c||''} ${hi?(on?'hi':'dim'):''}" aria-label="${SYM[s].n}">${SYM[s].g}</div>`;}$('grid').innerHTML=h;}
+function resetCab(){if(!STRIPS)return;cab.fg=0;cab.fgWin=0;$('cab-mode').textContent='主遊戲 · 20 線 · 每線 1';$('cab-spin').textContent='轉動';
+  drawGrid([0,1,2,3,4].map(r=>[STRIPS[r][0],STRIPS[r][1],STRIPS[r][2]]),null);}
+function cabSpin(){
+  if(!STRIPS||CFG.errs.length)return;
+  const inFG=cab.fg>0;
+  if(!inFG){cab.bal-=NL;}else cab.fg--;
+  const res=spinOnce(STRIPS,CFG,cab.rnd,true);
+  const m=inFG?CFG.mult:1;const win=res.win*m;cab.bal+=win;if(inFG)cab.fgWin+=win;
+  const hi=new Set();res.wins.forEach(w=>{for(let r=0;r<w.k;r++)hi.add(r+'-'+LINES[w.l][r]);});
+  if(res.n>=3)res.grid.forEach((col,r)=>col.forEach((s,y)=>{if(s===1)hi.add(r+'-'+y);}));
+  drawGrid(res.grid,(res.wins.length||res.n>=3)?hi:null);
+  const parts=res.wins.slice(0,4).map(w=>`線${w.l+1} ${SYM[w.s].g}×${w.k}=${w.x*m}`);if(res.wins.length>4)parts.push(`另 ${res.wins.length-4} 線`);
+  if(res.n>=3){parts.push(`${res.n} 個門：${CFG.sc[res.n]*NL*m}`);cab.fg+=CFG.fs;parts.push(inFG?`再觸發 +${CFG.fs} 場！`:`觸發 ${CFG.fs} 場免費遊戲！`);}
+  $('cab-win').textContent=num(win);$('cab-bal').textContent=num(cab.bal);
+  $('cab-log').textContent=parts.length?parts.join('　'):(inFG?'免費遊戲未中':'未中獎');
+  if(cab.fg>0){$('cab-mode').textContent=`免費遊戲 ×${CFG.mult} · 剩 ${cab.fg} 場 · 累計 ${num(cab.fgWin)}`;$('cab-spin').textContent='免費轉';}
+  else{if(inFG)$('cab-log').textContent+=`　免費遊戲結束，共贏 ${num(cab.fgWin)}`;cab.fgWin=0;$('cab-mode').textContent='主遊戲 · 20 線 · 每線 1';$('cab-spin').textContent='轉動';}
+}
+
+/* ---------- 綁定 ---------- */
+let t;$('reels').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(render,350);});
+$('calib').addEventListener('click',calibrate);
+$('sim-run').addEventListener('click',()=>{simSeed=(simSeed*1103515245+12345)>>>0;runSim();});
+$('sim-n').addEventListener('change',runSim);
+$('cab-spin').addEventListener('click',cabSpin);
+render();
+})();
+</script>
+
+</body>
+</html>

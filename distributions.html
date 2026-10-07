@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>機率分布與統計推論</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#A0501A;--accent-soft:#F4E1D3}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#EB9A62;--accent-soft:#3A2416}}
+:root[data-theme="dark"]{--accent:#EB9A62;--accent-soft:#3A2416}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">專案 03 · Probability Distributions &amp; Inference</div>
+  <h1>機率分布與統計推論</h1>
+  <p class="lede">拿到一組資料，先問它像哪一種分布，再用分布回答實際問題。第一題用卜瓦松分布描述超商來客數，檢定配適度並推算排班人力；第二題分析保險理賠金額，比較對數常態與帕雷托尾部對極端理賠的估計差異。</p>
+  <nav class="toc" aria-label="章節"><a href="#poisson">來客數與卜瓦松</a><a href="#claims">理賠金額與極值</a><a href="#qa">推論檢查</a></nav>
+</header>
+
+<!-- Poisson -->
+<section id="poisson">
+  <div class="sec-head">
+    <span class="spec">3-A · Poisson modelling</span>
+    <h2>超商來客數：是卜瓦松分布嗎</h2>
+    <p>記錄平日晚間每 10 分鐘進店的人數。如果顧客彼此獨立、隨機抵達，人數應該服從卜瓦松分布，平均數等於變異數。用卡方配適度檢定和離散度檢定確認，再用配適的分布決定每 10 分鐘要能接待多少人。也可以貼上自己蒐集的資料。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>資料來源</h3>
+      <div class="field"><label for="ps-src">資料</label>
+        <select id="ps-src"><option value="pois">卜瓦松生成</option><option value="od">尖峰混合（過度離散）</option><option value="paste">貼上自己的資料</option></select></div>
+      <div class="field" id="ps-lam-f"><label for="ps-lam">平均人數 λ</label><input type="number" id="ps-lam" value="7.3" min="0.2" max="100" step="0.1"></div>
+      <div class="field" id="ps-n-f"><label for="ps-n">觀測時段數</label><input type="number" id="ps-n" value="180" min="20" max="5000" step="10"></div>
+      <div id="ps-paste-f" hidden><label for="ps-data" class="note">每個數字代表一個時段的人數，以逗號、空白或換行分隔</label>
+        <textarea id="ps-data" rows="5">6 9 7 5 8 7 10 6 4 7 9 8 6 7 5 11 7 8 6 9 7 6 8 5 7 9 10 6 7 8 4 7 6 9 8 7 5 6 8 7</textarea></div>
+      <button class="btn" id="ps-seed" type="button">重新生成資料</button>
+      <div class="field"><label for="ps-risk">可接受的超載機率 %<small>排班建議用</small></label><input type="number" id="ps-risk" value="5" min="0.1" max="50" step="0.5"></div>
+      <div class="errors" id="ps-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="ps-verdict"></div>
+      <div class="stats" id="ps-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>觀測頻率 vs 卜瓦松配適</h3></div>
+        <div id="ps-chart"></div>
+        <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>觀測比例</span><span><i style="background:var(--c1)"></i>Poisson(λ̂) 機率</span></div>
+      </div>
+      <div class="two">
+        <div class="tbl-wrap">
+          <table aria-label="卡方配適度分組">
+            <thead><tr><th>人數</th><th>觀測</th><th>期望</th><th>(O−E)²/E</th></tr></thead>
+            <tbody id="ps-gof"></tbody>
+          </table>
+        </div>
+        <div class="tbl-wrap">
+          <table aria-label="排班超載機率">
+            <thead><tr><th>每 10 分鐘可接待</th><th>超載機率（模型）</th><th>超載比例（實際）</th></tr></thead>
+            <tbody id="ps-staff"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Claims -->
+<section id="claims">
+  <div class="sec-head">
+    <span class="spec">3-B · Severity &amp; extreme value</span>
+    <h2>保險理賠金額：極端理賠估得準嗎</h2>
+    <p>理賠金額通常右偏，對數常態是常見的起點。但真實資料常混有少數巨額理賠，尾部比對數常態更厚，這時用對數常態估 99.5% 分位數（準備金常用的水準）會嚴重低估。這裡用希爾估計量配適帕雷托尾部，並用拔靴法給出經驗分位數的信賴區間。資料由已知分布生成，所以表格中可以對照真實值。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>資料生成</h3>
+      <div class="field"><label for="cl-src">分布</label>
+        <select id="cl-src"><option value="mix">對數常態 + 4% 帕雷托巨災</option><option value="ln">純對數常態</option></select></div>
+      <div class="field"><label for="cl-n">理賠筆數</label><input type="number" id="cl-n" value="2000" min="200" max="20000" step="100"></div>
+      <div class="field"><label for="cl-mu">對數平均 μ<small>中位數 = e^μ 元</small></label><input type="number" id="cl-mu" value="10.5" min="5" max="15" step="0.1"></div>
+      <div class="field"><label for="cl-sig">對數標準差 σ</label><input type="number" id="cl-sig" value="1.1" min="0.2" max="3" step="0.1"></div>
+      <div class="field"><label for="cl-k">希爾估計取前 k 筆</label><input type="number" id="cl-k" value="100" min="10" step="10"></div>
+      <div class="formula">帕雷托尾部：x_m = 30 萬，α = 1.6<br>希爾：α̂ = k / Σ ln(x₍ᵢ₎ / x₍ₖ₊₁₎)</div>
+      <button class="btn" id="cl-seed" type="button">重新生成資料</button>
+      <div class="errors" id="cl-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats" id="cl-stats"></div>
+      <div class="tbl-wrap">
+        <table aria-label="分位數估計比較">
+          <thead><tr><th>分位數</th><th>真實值</th><th>經驗值</th><th>對數常態配適</th><th>帕雷托尾部（希爾）</th></tr></thead>
+          <tbody id="cl-q"></tbody>
+        </table>
+      </div>
+      <div class="two">
+        <div class="box">
+          <div class="cap"><h3>對數–對數存活函數圖</h3></div>
+          <div id="cl-surv"></div>
+          <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>經驗 P(X &gt; x)</span><span><i style="background:var(--c1)"></i>對數常態</span><span><i style="background:var(--bad)"></i>帕雷托尾部</span></div>
+          <div class="note">帕雷托尾部在這張圖上是直線。點在右下角偏離藍線，表示尾部比對數常態厚。</div>
+        </div>
+        <div class="box">
+          <div class="cap"><h3>ln(理賠金額) 的分布</h3></div>
+          <div id="cl-hist"></div>
+          <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>觀測</span><span><i style="background:var(--c1)"></i>常態配適</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">推論檢查</span><h2>推論前提與估計品質</h2>
+    <p>確認檢定的使用條件成立，並把估計值跟已知的真實值對照。用自己的資料時沒有真實值可比，相關項目會略過。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>示範資料由程式依指定分布生成（固定亂數種子）。所有估計、檢定與拔靴法都在瀏覽器內以手寫函數計算。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP}=PF;
+const QA={};
+
+/* ---------- 卜瓦松 ---------- */
+let psSeed=4;
+function getCounts(){
+  const src=$('ps-src').value;
+  $('ps-paste-f').hidden=src!=='paste';$('ps-lam-f').hidden=src==='paste';$('ps-n-f').hidden=src==='paste';$('ps-seed').hidden=src==='paste';
+  if(src==='paste'){
+    const toks=$('ps-data').value.split(/[\s,，、]+/).filter(Boolean);const xs=toks.map(Number);
+    const ok=xs.length>=20&&xs.every(x=>Number.isInteger(x)&&x>=0&&x<=10000);
+    PF.invalid(['ps-data'],ok?[]:['ps-data']);
+    return ok?{xs}:{err:xs.length<20?'至少需要 20 筆資料（目前 '+xs.length+' 筆）。':'資料只能是 0 以上的整數，請檢查是否有小數、負數或文字。'};
+  }
+  const lam=+$('ps-lam').value,n=Math.round(+$('ps-n').value);const bad=[];
+  if(!(lam>=0.2&&lam<=100))bad.push('ps-lam');if(!(n>=20&&n<=5000))bad.push('ps-n');
+  PF.invalid(['ps-lam','ps-n'],bad);
+  if(bad.length)return{err:'λ 需介於 0.2 到 100，時段數需介於 20 到 5,000。'};
+  const r=PF.rng(psSeed),xs=[];
+  for(let i=0;i<n;i++){const l=src==='od'?PF.gammaRand(r,2.5,lam/2.5):lam;xs.push(PF.poissonRand(r,l));}
+  return{xs,lam,src};
+}
+function runPois(){
+  const d=getCounts();const risk=+$('ps-risk').value/100;
+  const rbad=!(risk>=0.001&&risk<=0.5);PF.invalid(['ps-risk'],rbad?['ps-risk']:[]);
+  $('ps-err').textContent=d.err||(rbad?'超載機率需介於 0.1% 到 50%。':'');
+  if(d.err||rbad){QA.ps=null;renderQA();return;}
+  const xs=d.xs,n=xs.length,m=xs.reduce((a,b)=>a+b,0)/n,s2=xs.reduce((a,b)=>a+(b-m)**2,0)/(n-1);
+  if(m<=0){$('ps-err').textContent='資料平均為 0，無法配適卜瓦松分布。';QA.ps=null;renderQA();return;}
+  const D=s2/m,stat=(n-1)*s2/m,sf=PF.chi2Sf(stat,n-1),pDisp=Math.min(1,2*Math.min(sf,1-sf));
+  const xmax=Math.max(...xs);const obs=new Array(xmax+1).fill(0);xs.forEach(x=>obs[x]++);
+  let K=xmax;while(1-cdf(K,m)>1e-6&&K<xmax+200)K++;
+  function cdf(k,l){let s=0;for(let i=0;i<=k;i++)s+=PF.poissonPmf(i,l);return s;}
+  let bins=[];for(let k=0;k<=xmax;k++)bins.push({lo:k,hi:k,o:obs[k],e:n*PF.poissonPmf(k,m)});
+  bins[bins.length-1].hi=Infinity;bins[bins.length-1].e=n*(1-cdf(xmax-1,m));
+  // 從兩端合併期望值 < 5 的組
+  while(bins.length>1&&bins[0].e<5){const b=bins.shift();bins[0].lo=b.lo;bins[0].o+=b.o;bins[0].e+=b.e;}
+  while(bins.length>1&&bins[bins.length-1].e<5){const b=bins.pop();const t=bins[bins.length-1];t.hi=b.hi;t.o+=b.o;t.e+=b.e;}
+  let chi=0;bins.forEach(b=>{b.c=(b.o-b.e)**2/b.e;chi+=b.c;});
+  const df=bins.length-2,pGof=df>0?PF.chi2Sf(chi,df):NaN;
+  const ci=1.96*Math.sqrt(m/n);
+  QA.ps={n,m,D,pDisp,pGof,df,minE:Math.min(...bins.map(b=>b.e)),src:d.src,lam:d.lam};
+  const fitOk=df>0&&pGof>=0.05&&pDisp>=0.05;
+  $('ps-verdict').innerHTML=fitOk?`<span class="pill ok">符合卜瓦松</span><span>配適度 p = ${fmtP(pGof)}、離散度 p = ${fmtP(pDisp)}，都沒有拒絕卜瓦松假設。可以用 λ̂ = ${m.toFixed(2)} 的卜瓦松分布來規劃人力。</span>`
+    :pDisp<0.05?`<span class="pill bad">不符合卜瓦松</span><span>${D>1?`變異數是平均數的 ${D.toFixed(2)} 倍（過度離散），代表來客有群聚或尖峰，不是獨立隨機抵達。用卜瓦松排班會低估尖峰需求，可改用負二項分布。`:`變異數只有平均數的 ${D.toFixed(2)} 倍（離散不足），抵達比隨機更規律，例如有預約或固定班次。`}離散度 p = ${fmtP(pDisp)}，配適度 p = ${df>0?fmtP(pGof):'—'}。</span>`
+    :`<span class="pill info">形狀有差異</span><span>平均數與變異數接近（s²/x̄ = ${D.toFixed(2)}），但卡方配適度 p = ${df>0?fmtP(pGof):'—'}，分布形狀和卜瓦松有落差。在 α = 5% 下，即使資料真的是卜瓦松，也約有 1/20 的機會出現這種結果；建議增加觀測時段再檢定一次。</span>`;
+  PF.tiles($('ps-stats'),[
+    ['λ̂（樣本平均）',m.toFixed(3),'95% CI '+(m-ci).toFixed(2)+' – '+(m+ci).toFixed(2),'hl'],
+    ['樣本變異數',s2.toFixed(3),'離散指數 s²/x̄ = '+D.toFixed(3),Math.abs(D-1)>0.3?'alert':''],
+    ['配適度 χ²',df>0?chi.toFixed(2):'—',df>0?'df = '+df+'，p = '+fmtP(pGof):'組數不足'],
+    ['觀測時段',num(n),d.src==='paste'?'自己的資料':d.src==='od'?'尖峰混合生成':'卜瓦松生成']]);
+  const pts=[],lp=[];for(let k=0;k<=Math.max(xmax,Math.ceil(m+4*Math.sqrt(m)));k++){pts.push([k,(obs[k]||0)/n]);lp.push([k,PF.poissonPmf(k,m)]);}
+  const ym=Math.max(...pts.map(p=>p[1]),...lp.map(p=>p[1]))*1.15;const xm=pts.length-1;
+  PF.chart($('ps-chart'),{label:'來客數分布',x0:-0.6,x1:xm+0.6,y0:0,y1:ym,yFmt:v=>Math.round(v*100)+'%',xStep:xm>40?10:xm>20?5:xm>10?2:1,
+    series:[{kind:'bar',pts,color:'var(--accent)',op:0.75,width:0.7},{kind:'line',pts:lp,stroke:'var(--c1)',sw:1.8},{kind:'dots',pts:lp,color:'var(--c1)',r:2.6,op:1}]});
+  $('ps-gof').innerHTML=bins.map(b=>`<tr><td class="mono">${b.lo===b.hi?b.lo:b.hi===Infinity?'≥ '+b.lo:b.lo+' – '+b.hi}</td><td class="mono">${b.o}</td><td class="mono">${b.e.toFixed(1)}</td><td class="mono">${b.c.toFixed(2)}</td></tr>`).join('')+`<tr><td><b>合計</b></td><td class="mono">${n}</td><td class="mono">${n.toFixed(1)}</td><td class="mono"><b>${chi.toFixed(2)}</b></td></tr>`;
+  let rec=null;const rows=[];
+  for(let k=Math.max(0,Math.floor(m));k<=Math.ceil(m+5*Math.sqrt(m))+1;k++){const pm=1-cdf(k,m),pe=xs.filter(x=>x>k).length/n;if(rec==null&&pm<risk)rec=k;rows.push([k,pm,pe]);if(rec!=null&&k>=rec+3)break;}
+  $('ps-staff').innerHTML=rows.map(([k,pm,pe])=>`<tr><td class="mono">${k} 人${k===rec?' <span class="pill ok">建議</span>':''}</td><td class="mono">${pct(pm,2)}</td><td class="mono">${pct(pe,2)}</td></tr>`).join('');
+  renderQA();
+}
+
+/* ---------- 理賠 ---------- */
+let clSeed=9;const XM=300000,ALPHA=1.6,PMIX=0.04;
+function trueQuantile(q,src,mu,sg){
+  if(src==='ln')return Math.exp(mu+sg*PF.normInv(q));
+  const F=x=>(1-PMIX)*PF.normCdf((Math.log(x)-mu)/sg)+PMIX*(x<XM?0:1-Math.pow(XM/x,ALPHA));
+  let lo=1,hi=1e13;for(let i=0;i<200;i++){const mid=Math.sqrt(lo*hi);if(F(mid)<q)lo=mid;else hi=mid;}return Math.sqrt(lo*hi);
+}
+function runClaims(){
+  const src=$('cl-src').value,n=Math.round(+$('cl-n').value),mu=+$('cl-mu').value,sg=+$('cl-sig').value,k=Math.round(+$('cl-k').value);
+  const bad=[],msg=[];
+  if(!(n>=200&&n<=20000)){bad.push('cl-n');msg.push('理賠筆數需介於 200 到 20,000。');}
+  if(!(mu>=5&&mu<=15)){bad.push('cl-mu');msg.push('對數平均需介於 5 到 15。');}
+  if(!(sg>=0.2&&sg<=3)){bad.push('cl-sig');msg.push('對數標準差需介於 0.2 到 3。');}
+  if(!(k>=10&&k<n/2)){bad.push('cl-k');msg.push('希爾估計的 k 需至少 10，且小於筆數的一半。');}
+  PF.invalid(['cl-n','cl-mu','cl-sig','cl-k'],bad);$('cl-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length){QA.cl=null;renderQA();return;}
+  const r=PF.rng(clSeed),xs=[];
+  for(let i=0;i<n;i++){if(src==='mix'&&r()<PMIX)xs.push(XM*Math.pow(1-r(),-1/ALPHA));else xs.push(Math.exp(mu+sg*PF.randn(r)));}
+  const asc=xs.slice().sort((a,b)=>a-b),desc=asc.slice().reverse();
+  const lx=xs.map(Math.log),m=lx.reduce((a,b)=>a+b,0)/n,s=Math.sqrt(lx.reduce((a,b)=>a+(b-m)**2,0)/(n-1));
+  const xk=desc[k];let hs=0;for(let i=0;i<k;i++)hs+=Math.log(desc[i]/xk);const ah=k/hs;
+  const emp=(arr,q)=>{const h=(arr.length-1)*q,lo=Math.floor(h);return arr[lo]+(arr[Math.min(arr.length-1,lo+1)]-arr[lo])*(h-lo);};
+  const lnQ=q=>Math.exp(m+s*PF.normInv(q)),hillQ=q=>q>1-k/n?xk*Math.pow((k/n)/(1-q),1/ah):null;
+  // 拔靴 99% 分位數
+  const B=400,rb=PF.rng(clSeed+500),boots=[];
+  for(let b=0;b<B;b++){const smp=new Float64Array(n);for(let i=0;i<n;i++)smp[i]=asc[Math.floor(rb()*n)];smp.sort();boots.push(emp(smp,0.99));}
+  boots.sort((a,b)=>a-b);const bLo=boots[Math.floor(B*0.025)],bHi=boots[Math.floor(B*0.975)];
+  const v99=emp(asc,0.99),tail=asc.filter(x=>x>=v99),tvar=tail.reduce((a,b)=>a+b,0)/tail.length;
+  const t99=trueQuantile(0.99,src,mu,sg),t995=trueQuantile(0.995,src,mu,sg);
+  QA.cl={n,k,ah,src,bLo,bHi,t99,ln995:lnQ(0.995),t995,hill995:hillQ(0.995)};
+  const w=v=>v==null?'—':v>=1e8?num(v/1e8,2)+' 億':num(v/1e4,1)+' 萬';
+  PF.tiles($('cl-stats'),[
+    ['中位數',w(emp(asc,0.5)),'平均 '+w(xs.reduce((a,b)=>a+b,0)/n),''],
+    ['99% 分位數（VaR）',w(v99),'拔靴 95% CI '+w(bLo)+' – '+w(bHi),'hl'],
+    ['99% TVaR',w(tvar),'超過 VaR 的平均理賠'],
+    ['尾部指數 α̂',ah.toFixed(2),src==='mix'?'真實 α = '+ALPHA:'對數常態沒有冪律尾部',ah<2?'alert':'']]);
+  const qs=[0.9,0.95,0.99,0.995,0.999];
+  $('cl-q').innerHTML=qs.map(q=>{const t=trueQuantile(q,src,mu,sg),a=lnQ(q),h=hillQ(q);const err=v=>v==null?'':` <span class="muted">(${v>=t?'+':''}${pct(v/t-1,0)})</span>`;
+    return `<tr><td class="mono">${(q*100).toFixed(1)}%</td><td class="mono"><b>${w(t)}</b></td><td class="mono">${w(emp(asc,q))}${err(emp(asc,q))}</td><td class="mono">${w(a)}${err(a)}</td><td class="mono">${w(h)}${h==null?'':err(h)}</td></tr>`;}).join('');
+  // 存活函數圖
+  const step=Math.max(1,Math.floor(n/700)),pts=[];
+  for(let i=0;i<n;i+=step)pts.push([Math.log10(asc[i]),Math.log10((n-i)/(n+1))]);
+  for(let i=Math.max(0,n-60);i<n;i++)pts.push([Math.log10(asc[i]),Math.log10((n-i)/(n+1))]);
+  const x0=Math.log10(asc[0]),x1=Math.log10(asc[n-1])+0.2,yMin=Math.log10(1/(n+1))-0.3;
+  const lnS=[],hl=[];for(let x=x0;x<=x1;x+=(x1-x0)/200){const v=1-PF.normCdf((x*Math.LN10-m)/s);if(v>0)lnS.push([x,Math.max(yMin-1,Math.log10(v))]);}
+  for(let x=Math.log10(xk);x<=x1;x+=(x1-Math.log10(xk))/60)hl.push([x,Math.log10(k/n)-ah*(x-Math.log10(xk))]);
+  const xt=[];for(let e=Math.ceil(x0);e<=Math.floor(x1);e++)xt.push({v:e,l:e>=8?'10^'+e:num(Math.pow(10,e)/1e4)+(e>=4?' 萬':'')});
+  PF.chart($('cl-surv'),{label:'對數存活函數',x0,x1,y0:yMin,y1:0.05,yStep:1,yFmt:v=>v===0?'100%':v>=-2?pct(Math.pow(10,v),0):'10^'+v.toFixed(0),xTicks:xt,
+    series:[{kind:'dots',pts,color:'var(--accent)',r:2.2,op:0.6},{kind:'line',pts:lnS,stroke:'var(--c1)',sw:1.8},{kind:'line',pts:hl,stroke:'var(--bad)',sw:1.8,dash:'5 3'}]});
+  // ln 直方圖
+  const lo=Math.min(...lx),hi=Math.max(...lx),bins=40,bw=(hi-lo)/bins;const c=new Array(bins+1).fill(0);lx.forEach(v=>c[Math.min(bins,Math.floor((v-lo)/bw))]++);
+  const hp=c.map((v,i)=>[lo+(i+0.5)*bw,v/(n*bw)]);const np=[];for(let x=lo;x<=hi;x+=(hi-lo)/120)np.push([x,PF.normPdf((x-m)/s)/s]);
+  PF.chart($('cl-hist'),{label:'對數理賠金額直方圖',x0:lo,x1:hi+bw,y0:0,y1:Math.max(...hp.map(p=>p[1]),...np.map(p=>p[1]))*1.15,yFmt:v=>v.toFixed(2),xFmt:v=>v.toFixed(0),xStep:1,
+    series:[{kind:'bar',pts:hp,color:'var(--accent)',op:0.65,width:0.9},{kind:'line',pts:np,stroke:'var(--c1)'}]});
+  renderQA();
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.ps){const p=QA.ps;
+    rows.push(['PS-N','樣本數足夠（≥ 30 個時段）','n = '+p.n,p.n>=30?'ok':'info']);
+    rows.push(['PS-E','卡方檢定每組期望次數 ≥ 5（已自動合併尾端）',p.df>0?'最小期望 '+p.minE.toFixed(1)+'，自由度 '+p.df:'合併後組數不足，無法檢定',p.df>0&&p.minE>=5?'ok':'bad']);
+    rows.push(['PS-DISP','離散度：平均數 ≈ 變異數','s²/x̄ = '+p.D.toFixed(3)+'，p = '+fmtP(p.pDisp),p.pDisp>=0.05?'ok':'info']);
+    if(p.src&&p.src!=='paste'){const expectFit=p.src==='pois',got=p.pGof>=0.05&&p.pDisp>=0.05;
+      rows.push(['PS-TRUE','檢定結論與生成機制一致',(expectFit?'資料確實是卜瓦松':'資料確實過度離散')+'，檢定判定'+(got?'符合':'不符合'),expectFit===got?'ok':'info']);}}
+  if(QA.cl){const c=QA.cl;
+    rows.push(['CL-K','希爾估計的 k 在合理範圍（樣本的 1%–20%）',`k / n = ${pct(c.k/c.n,1)}`,c.k/c.n>=0.01&&c.k/c.n<=0.2?'ok':'info']);
+    rows.push(['CL-BOOT','拔靴 95% CI 包含真實 99% 分位數',`${num(c.bLo/1e4,1)} – ${num(c.bHi/1e4,1)} 萬，真值 ${num(c.t99/1e4,1)} 萬`,c.t99>=c.bLo&&c.t99<=c.bHi?'ok':'info']);
+    rows.push(['CL-TAIL','對數常態配適對 99.5% 分位數的誤差',`低估／高估 ${pct(c.ln995/c.t995-1,1)}；希爾 ${c.hill995?pct(c.hill995/c.t995-1,1):'—'}`,Math.abs(c.ln995/c.t995-1)<=0.2?'ok':'info']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+
+const dP=PF.debounce(runPois,250),dC=PF.debounce(runClaims,300);
+['ps-src','ps-lam','ps-n','ps-data','ps-risk'].forEach(id=>$(id).addEventListener('input',dP));
+['cl-src','cl-n','cl-mu','cl-sig','cl-k'].forEach(id=>$(id).addEventListener('input',dC));
+$('ps-seed').addEventListener('click',()=>{psSeed++;runPois();});
+$('cl-seed').addEventListener('click',()=>{clSeed++;runClaims();});
+runPois();runClaims();
+})();
+</script>
+</body>
+</html>

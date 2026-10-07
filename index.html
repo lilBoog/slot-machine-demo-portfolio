@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>機率與統計作品集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+/* 首頁：標題 → 四大類專案卡片（依類型分組）→ 產業應用 → 方法與技能對照 */
+.hero{display:grid;gap:12px;padding-block:28px 30px;border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(32px,5vw,50px)}
+.thesis{font-family:var(--f-display);font-size:clamp(17px,2.2vw,21px);font-weight:700;max-width:40ch;text-wrap:balance}
+.works{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.works{grid-template-columns:minmax(0,1fr)}}
+.work{--c:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:10px;align-content:start;text-decoration:none;color:inherit;border-top:4px solid var(--c)}
+.work:hover,.work:focus-visible{border-color:var(--c);outline:none}
+.work .tag{font-family:var(--f-mono);font-size:12px;color:var(--c);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.work p{color:var(--muted);font-size:14px}
+.work ul{margin:0;padding-left:1.2em;font-size:14px;display:grid;gap:3px}
+.work .meth{display:flex;flex-wrap:wrap;gap:6px}
+.work .meth span{font-family:var(--f-mono);font-size:11.5px;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.work .go{font-size:14px;font-weight:700;color:var(--c)}
+.feature{grid-column:1/-1}
+.skills{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.skill{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);font-size:14px}
+.skill:last-child{border-bottom:none}
+.skill b{font-weight:500}
+.skill span{color:var(--muted)}
+@media (max-width:560px){.skill{grid-template-columns:minmax(0,1fr);gap:2px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Portfolio · Probability &amp; Statistics</div>
+    <h1>機率與統計作品集</h1>
+    <p class="thesis">用數據說故事，把抽象的數學變成可以操作的東西。</p>
+    <p class="lede">五個可以直接在瀏覽器操作的專案，涵蓋機率模擬、假設檢定、分布推論、機器學習的數學底層，以及一個完整的產業應用。每個專案都把模擬結果跟理論值對照，並附上自動化的結果檢查。所有參數都能修改，結果即時重算。</p>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="spec">四大類型</span><h2>核心專案</h2></div>
+    <div class="works">
+      <a class="work" href="monte-carlo.html" style="--c:#2D5FA6">
+        <span class="tag"><span>01 · Probability &amp; Simulation</span></span>
+        <h2>蒙地卡羅模擬實驗室</h2>
+        <p>三個經典機率問題，用模擬驗證理論。</p>
+        <ul><li>隨機撒點估算 π，誤差隨 √n 收斂</li><li>蒙提霍爾問題：主持人知情與否的差別</li><li>賭徒破產：期望值、變異數、破產機率與押注策略</li></ul>
+        <div class="meth"><span>Monte Carlo</span><span>條件機率</span><span>隨機漫步</span></div>
+        <span class="go">開啟專案 →</span>
+      </a>
+      <a class="work" href="ab-testing.html" style="--c:#0A766E">
+        <span class="tag"><span>02 · EDA &amp; Hypothesis Testing</span></span>
+        <h2>A/B 測試與迴歸分析</h2>
+        <p>改版是真的有效，還是運氣？係數還能不能信？</p>
+        <ul><li>雙比例 z 檢定、信賴區間、檢定力與所需樣本數</li><li>型一／型二錯誤視覺化，以及「偷看」造成的誤判膨脹</li><li>房價多元迴歸、VIF 與遺漏變數偏誤</li></ul>
+        <div class="meth"><span>p 值</span><span>α / β</span><span>OLS</span><span>多重共線性</span></div>
+        <span class="go">開啟專案 →</span>
+      </a>
+      <a class="work" href="distributions.html" style="--c:#A0501A">
+        <span class="tag"><span>03 · Distributions &amp; Inference</span></span>
+        <h2>機率分布與統計推論</h2>
+        <p>資料像哪一種分布，分布又能回答什麼問題。</p>
+        <ul><li>超商來客數的卜瓦松配適、卡方檢定與排班建議</li><li>保險理賠的對數常態與帕雷托尾部比較</li><li>極端分位數（VaR / TVaR）與拔靴信賴區間</li></ul>
+        <div class="meth"><span>Poisson</span><span>χ² 配適度</span><span>希爾估計</span><span>Bootstrap</span></div>
+        <span class="go">開啟專案 →</span>
+      </a>
+      <a class="work" href="ml-foundations.html" style="--c:#5A44A0">
+        <span class="tag"><span>04 · ML / AI Math Foundations</span></span>
+        <h2>手刻貝氏分類器與馬可夫鏈</h2>
+        <p>不用套件，從公式寫出模型。</p>
+        <ul><li>單純貝氏垃圾訊息過濾器，逐詞顯示影響</li><li>留一法評估與混淆矩陣</li><li>市場狀態馬可夫鏈：多步轉移、穩態、從資料反推轉移矩陣</li></ul>
+        <div class="meth"><span>貝氏定理</span><span>拉普拉斯平滑</span><span>轉移矩陣</span><span>MLE</span></div>
+        <span class="go">開啟專案 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="spec">產業應用</span><h2>綜合應用專案</h2></div>
+    <div class="works">
+      <a class="work feature" href="slot-par-sheet.html" style="--c:#A82C1C">
+        <span class="tag"><span>05 · Applied · 博弈數學</span><span>附試玩機台</span></span>
+        <h2>金鯉躍門 PAR 表</h2>
+        <p>把前面四類方法用在同一個真實產品上：5 軸 × 3 列、20 線視訊老虎機的完整數學模型。</p>
+        <ul><li>主遊戲、分散符號、免費遊戲（含重觸發）的精確 RTP 拆解</li><li>30 萬局模擬驗證、命中率、波動度指標與贏分分布</li><li>輪帶敏感度分析、目標 RTP 校準與送審前檢查</li></ul>
+        <div class="meth"><span>全組合窮舉</span><span>期望值</span><span>Monte Carlo</span><span>敏感度分析</span></div>
+        <span class="go">開啟專案 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="spec">方法對照</span><h2>每個專案展示的能力</h2></div>
+    <div class="skills">
+      <div class="skill"><b>資料處理</b><span>來客數可貼上自己的資料並自動驗證格式；卡方檢定自動合併期望次數不足的組別</span></div>
+      <div class="skill"><b>假設檢定</b><span>雙比例 z 檢定、卡方配適度、離散度檢定、樣本比例不匹配檢查、迴歸係數 t 檢定</span></div>
+      <div class="skill"><b>機率建模</b><span>卜瓦松、負二項、對數常態、帕雷托、馬可夫鏈、賭徒破產的封閉解</span></div>
+      <div class="skill"><b>模擬與驗證</b><span>每個專案都用蒙地卡羅模擬對照理論值，差距在 3 個標準誤內才算通過</span></div>
+      <div class="skill"><b>實際應用</b><span>排班人力、準備金分位數、網頁改版決策、垃圾訊息過濾、博弈機台 RTP 送審</span></div>
+      <div class="skill"><b>工程實作</b><span>純 HTML / JavaScript，不依賴統計或機器學習套件；分布函數、矩陣反運算、最小平方法皆手寫</span></div>
+    </div>
+  </section>
+
+  <footer>示範資料為程式依已知分布生成或自行撰寫，與任何實際公司、產品無關。</footer>
+</div>
+</body>
+</html>

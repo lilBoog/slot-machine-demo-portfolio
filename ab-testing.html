@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A/B 測試與迴歸分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.cm td{text-align:center}
+.cm td:first-child{text-align:left}
+.cm .cell{display:grid;gap:2px;justify-items:center}
+.cm .cell b{font-family:var(--f-mono);font-weight:500}
+.vars{display:flex;flex-wrap:wrap;gap:6px 14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">專案 02 · EDA &amp; Hypothesis Testing</div>
+  <h1>A/B 測試與迴歸分析</h1>
+  <p class="lede">兩個資料分析最常碰到的問題：網頁改版後點擊率變高，是真的有效還是運氣？房價受哪些因素影響、變數彼此相關時係數還能不能信？前者用雙比例 z 檢定、檢定力與「偷看」模擬來回答，後者用手寫的最小平方法與 VIF 來回答。</p>
+  <nav class="toc" aria-label="章節"><a href="#ab">A/B 測試</a><a href="#peek">偷看的代價</a><a href="#reg">房價迴歸</a><a href="#qa">分析檢查</a></nav>
+</header>
+
+<!-- A/B -->
+<section id="ab">
+  <div class="sec-head">
+    <span class="spec">2-A · Two-proportion z-test</span>
+    <h2>網頁改版有沒有讓點擊率變高</h2>
+    <p>輸入兩組的瀏覽數與點擊數。檢定的虛無假設是「兩版點擊率相同」。除了 p 值，同時看差異的信賴區間和檢定力：沒有顯著不代表沒有效果，也可能只是樣本不夠。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>實驗數據</h3>
+      <div class="field"><label for="ab-na">A 版瀏覽數<small>原版（對照組）</small></label><input type="number" id="ab-na" value="10000" min="1" step="100"></div>
+      <div class="field"><label for="ab-ca">A 版點擊數</label><input type="number" id="ab-ca" value="520" min="0" step="1"></div>
+      <div class="field"><label for="ab-nb">B 版瀏覽數<small>改版（實驗組）</small></label><input type="number" id="ab-nb" value="10000" min="1" step="100"></div>
+      <div class="field"><label for="ab-cb">B 版點擊數</label><input type="number" id="ab-cb" value="580" min="0" step="1"></div>
+      <h3>檢定設定</h3>
+      <div class="field"><label for="ab-alpha">顯著水準 α %<small>型一錯誤上限</small></label><input type="number" id="ab-alpha" value="5" min="0.1" max="20" step="0.5"></div>
+      <div class="field"><label for="ab-mde">最小可偵測效果 %<small>相對提升，用來算檢定力</small></label><input type="number" id="ab-mde" value="10" min="0.5" max="200" step="0.5"></div>
+      <div class="field"><label for="ab-pow">目標檢定力 %<small>1 − β</small></label><input type="number" id="ab-pow" value="80" min="50" max="99" step="5"></div>
+      <div class="errors" id="ab-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="ab-verdict"></div>
+      <div class="stats" id="ab-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>型一錯誤與型二錯誤（以最小可偵測效果為對立假設）</h3></div>
+        <div id="ab-curve"></div>
+        <div class="legend"><span><i style="background:var(--muted)"></i>H₀：沒有差異</span><span><i style="background:var(--accent)"></i>H₁：提升 = 最小可偵測效果</span><span><i class="dot" style="background:var(--bad)"></i>α 型一錯誤</span><span><i class="dot" style="background:var(--warn)"></i>β 型二錯誤</span><span><i style="background:var(--c2)"></i>觀測到的 z</span></div>
+      </div>
+      <div class="tbl-wrap cm">
+        <table aria-label="判定結果與真實情況">
+          <thead><tr><th></th><th>真實：兩版沒有差異</th><th>真實：B 版提升達 MDE</th></tr></thead>
+          <tbody id="ab-cm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Peeking -->
+<section id="peek">
+  <div class="sec-head">
+    <span class="spec">2-B · Peeking simulation</span>
+    <h2>偷看的代價：每天看一次 p 值會怎樣</h2>
+    <p>模擬大量 A/A 測試（兩版完全相同），樣本分批進來，每批都做一次檢定，只要有一次 p &lt; α 就宣布「顯著」。理論上誤判率應該是 α，但反覆偷看會讓型一錯誤大幅膨脹。這也是實務上要事先決定樣本數，或改用序貫檢定的原因。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>模擬設定</h3>
+      <div class="field"><label for="pk-k">偷看次數<small>平均分批</small></label><input type="number" id="pk-k" value="20" min="1" max="60" step="1"></div>
+      <div class="field"><label for="pk-n">每組總樣本</label><input type="number" id="pk-n" value="10000" min="1000" max="200000" step="1000"></div>
+      <div class="field"><label for="pk-m">實驗次數</label><input type="number" id="pk-m" value="2000" min="200" max="10000" step="200"></div>
+      <p class="note">點擊率沿用 A 版的實際值，α 沿用上方設定。</p>
+      <button class="btn" id="pk-seed" type="button">換一組亂數重跑</button>
+      <div class="errors" id="pk-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats three" id="pk-stats"></div>
+      <div class="box">
+        <div class="cap"><h3>偷看次數 vs 實際型一錯誤率</h3></div>
+        <div id="pk-chart"></div>
+        <div class="legend"><span><i style="background:var(--bad)"></i>至少一次顯著的比例</span><span><i style="background:var(--muted)"></i>名目 α</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Regression -->
+<section id="reg">
+  <div class="sec-head">
+    <span class="spec">2-C · Multiple regression &amp; multicollinearity</span>
+    <h2>房價迴歸與多重共線性</h2>
+    <p>資料由已知的真實模型生成，所以可以直接對照「估計值」和「真實係數」。房間數跟坪數高度相關：兩個一起放進模型，係數仍然不偏，但標準誤變大、VIF 升高；只放房間數，它會吸收坪數的效果，產生遺漏變數偏誤。下方實驗重抽 200 組樣本，把這兩種情況畫出來。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>資料生成</h3>
+      <div class="field"><label for="rg-n">樣本數</label><input type="number" id="rg-n" value="300" min="30" max="5000" step="50"></div>
+      <div class="field"><label for="rg-noise">房間數雜訊<small>越小越共線</small></label><input type="number" id="rg-noise" value="0.4" min="0.05" max="3" step="0.05"></div>
+      <div class="formula">房價（萬）= 300 + 32·坪數 + 15·房間數<br>&nbsp;&nbsp;− 5·屋齡 − 90·捷運距離 + ε<br>ε ~ N(0, 120²)<br>房間數 ≈ 坪數 / 11 + 雜訊</div>
+      <h3>放進模型的變數</h3>
+      <div class="vars" id="rg-vars"></div>
+      <button class="btn" id="rg-seed" type="button">重新抽一組樣本</button>
+      <div class="errors" id="rg-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats" id="rg-stats"></div>
+      <div class="tbl-wrap">
+        <table aria-label="迴歸係數">
+          <thead><tr><th>變數</th><th>真實係數</th><th>估計值</th><th>標準誤</th><th>t</th><th>p 值</th><th>95% 信賴區間</th><th>VIF</th></tr></thead>
+          <tbody id="rg-coef"></tbody>
+        </table>
+      </div>
+      <div class="two">
+        <div class="box"><div class="cap"><h3>實際房價 vs 預測房價</h3></div><div id="rg-fit"></div></div>
+        <div class="box"><div class="cap"><h3>殘差 vs 預測值</h3></div><div id="rg-res"></div><div class="note">殘差沒有明顯趨勢或喇叭形，表示線性與同質變異的假設大致成立。</div></div>
+      </div>
+      <div class="box">
+        <div class="cap"><h3>重抽 200 組樣本：「房間數」係數的抽樣分布</h3><span class="note" id="rg-mc-note"></span></div>
+        <div id="rg-mc"></div>
+        <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>模型含坪數（不偏但較寬）</span><span><i class="dot" style="background:var(--c2)"></i>模型不含坪數（遺漏變數偏誤）</span><span><i style="background:var(--ink)"></i>真實值 15</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">分析檢查</span><h2>分析前提與資料品質檢查</h2>
+    <p>這些是交付分析報告前會逐項確認的事：樣本分流是否均勻、常態近似是否成立、模型能不能估、共線性有多嚴重。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>A/B 數據為示範值；房價資料為程式依上方公式生成的模擬資料，可替換成內政部實價登錄等公開資料。所有統計量都在瀏覽器內以手寫函數計算。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP,esc}=PF;
+const QA={};
+
+/* ---------- A/B ---------- */
+function runAB(){
+  const v=id=>+$(id).value;
+  const na=Math.round(v('ab-na')),ca=Math.round(v('ab-ca')),nb=Math.round(v('ab-nb')),cb=Math.round(v('ab-cb'));
+  const alpha=v('ab-alpha')/100,mde=v('ab-mde')/100,pow=v('ab-pow')/100;
+  const bad=[],msg=[];
+  if(!(na>=1)){bad.push('ab-na');msg.push('A 版瀏覽數需至少 1。');}
+  if(!(nb>=1)){bad.push('ab-nb');msg.push('B 版瀏覽數需至少 1。');}
+  if(!(ca>=0&&ca<=na)){bad.push('ab-ca');msg.push('A 版點擊數需介於 0 和瀏覽數之間。');}
+  if(!(cb>=0&&cb<=nb)){bad.push('ab-cb');msg.push('B 版點擊數需介於 0 和瀏覽數之間。');}
+  if(!(alpha>=0.001&&alpha<=0.2)){bad.push('ab-alpha');msg.push('α 需介於 0.1% 到 20%。');}
+  if(!(mde>=0.005&&mde<=2)){bad.push('ab-mde');msg.push('最小可偵測效果需介於 0.5% 到 200%。');}
+  if(!(pow>=0.5&&pow<=0.99)){bad.push('ab-pow');msg.push('目標檢定力需介於 50% 到 99%。');}
+  PF.invalid(['ab-na','ab-ca','ab-nb','ab-cb','ab-alpha','ab-mde','ab-pow'],bad);
+  $('ab-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length||ca+cb===0||ca+cb===na+nb){QA.ab=null;if(!bad.length)$('ab-err').textContent='兩組點擊數不能全為 0 或全部點擊，無法估計變異。';renderQA();return;}
+  const pa=ca/na,pb=cb/nb,d=pb-pa,pp=(ca+cb)/(na+nb);
+  const seP=Math.sqrt(pp*(1-pp)*(1/na+1/nb)),z=d/seP,p=2*(1-PF.normCdf(Math.abs(z)));
+  const seU=Math.sqrt(pa*(1-pa)/na+pb*(1-pb)/nb),zc=PF.normInv(1-alpha/2),zb=PF.normInv(pow);
+  const lo=d-zc*seU,hi=d+zc*seU;
+  const p2=Math.min(0.999,pa*(1+mde)),dm=p2-pa,pbar=(pa+p2)/2;
+  const nReq=Math.ceil(Math.pow(zc*Math.sqrt(2*pbar*(1-pbar))+zb*Math.sqrt(pa*(1-pa)+p2*(1-p2)),2)/(dm*dm));
+  const se0=Math.sqrt(pbar*(1-pbar)*(1/na+1/nb)),se1=Math.sqrt(pa*(1-pa)/na+p2*(1-p2)/nb);
+  const power=PF.normCdf((dm-zc*se0)/se1)+PF.normCdf((-dm-zc*se0)/se1);
+  const sig=p<alpha;
+  QA.ab={na,nb,ca,cb,pa,pb,p,sig,power,nReq};
+  $('ab-verdict').innerHTML=sig?`<span class="pill ok">顯著</span><span>B 版點擊率 ${pct(pb,2)}，比 A 版 ${pct(pa,2)} ${d>0?'高':'低'} ${pct(Math.abs(d),2)}（相對 ${d>0?'+':'−'}${pct(Math.abs(d/pa),1)}）。p = ${fmtP(p)} &lt; α = ${pct(alpha,1)}，可以拒絕「兩版相同」的假設。</span>`
+    :`<span class="pill info">不顯著</span><span>差異 ${d>=0?'+':'−'}${pct(Math.abs(d),2)}，p = ${fmtP(p)} ≥ α = ${pct(alpha,1)}。${power<pow?`目前檢定力只有 ${pct(power,0)}，每組需要約 ${num(nReq)} 筆才有 ${pct(pow,0)} 把握偵測到 ${pct(mde,0)} 的提升，不顯著可能只是樣本不夠。`:'檢定力足夠，代表即使有效果，也小於設定的最小可偵測效果。'}</span>`;
+  PF.tiles($('ab-stats'),[
+    ['z 統計量',z.toFixed(3),'合併比例標準誤 '+seP.toFixed(5),'hl'],
+    ['p 值（雙尾）',fmtP(p),'α = '+pct(alpha,1),sig?'good':''],
+    [`差異的 ${pct(1-alpha,0)} 信賴區間`,(lo>=0?'+':'')+pct(lo,2)+' ~ '+(hi>=0?'+':'')+pct(hi,2),lo>0||hi<0?'不包含 0':'包含 0'],
+    ['檢定力（MDE '+pct(mde,0)+'）',pct(power,1),'每組需 '+num(nReq)+' 筆達 '+pct(pow,0),power>=pow?'good':'alert']]);
+  // 圖：H0 / H1
+  const mu1=dm/se0,s1=se1/se0,xmax=Math.max(4.5,mu1+3.5*s1),xmin=-4.5,step=(xmax-xmin)/300;
+  const f0=x=>PF.normPdf(x),f1=x=>PF.normPdf((x-mu1)/s1)/s1;
+  const seg=(f,a,b)=>{const pts=[];for(let x=Math.max(a,xmin);x<=Math.min(b,xmax)+1e-9;x+=step)pts.push([x,f(x)]);return pts;};
+  const all0=seg(f0,xmin,xmax),all1=seg(f1,xmin,xmax);
+  const ymax=Math.max(...all0.map(p=>p[1]),...all1.map(p=>p[1]))*1.12;
+  PF.chart($('ab-curve'),{label:'型一與型二錯誤示意',x0:xmin,x1:xmax,y0:0,y1:ymax,yFmt:v=>v.toFixed(1),xFmt:v=>v.toFixed(0),xStep:1,
+    series:[
+      {kind:'line',pts:seg(f1,-zc,zc),stroke:'var(--warn)',fill:true,fo:0.35,noStroke:true},
+      {kind:'line',pts:seg(f0,zc,xmax),stroke:'var(--bad)',fill:true,fo:0.45,noStroke:true},
+      {kind:'line',pts:seg(f0,xmin,-zc),stroke:'var(--bad)',fill:true,fo:0.45,noStroke:true},
+      {kind:'line',pts:all0,stroke:'var(--muted)'},{kind:'line',pts:all1,stroke:'var(--accent)'}],
+    vmarks:[{x:zc,color:'var(--ink)',label:'臨界值 ±'+zc.toFixed(2)},{x:-zc,color:'var(--ink)'},{x:Math.max(xmin,Math.min(xmax,z)),color:'var(--c2)',label:'觀測 z = '+z.toFixed(2)}]});
+  const beta=1-power;
+  const cell=(t,v,st)=>`<div class="cell"><span>${t}</span><b>${v}</b>${st?`<span class="pill ${st[0]}">${st[1]}</span>`:''}</div>`;
+  $('ab-cm').innerHTML=`<tr><td>判定：顯著（推出 B 版）</td><td>${cell('型一錯誤 α',pct(alpha,1),['bad','誤報'])}</td><td>${cell('檢定力 1 − β',pct(power,1),['ok','正確'])}</td></tr>
+  <tr><td>判定：不顯著（維持 A 版）</td><td>${cell('信賴水準 1 − α',pct(1-alpha,1),['ok','正確'])}</td><td>${cell('型二錯誤 β',pct(beta,1),['info','漏報'])}</td></tr>`;
+  renderQA();runPeek();
+}
+
+/* ---------- 偷看模擬 ---------- */
+let pkSeed=31;
+function runPeek(){
+  const K=Math.round(+$('pk-k').value),N=Math.round(+$('pk-n').value),M=Math.round(+$('pk-m').value);
+  const bad=[],msg=[];
+  if(!(K>=1&&K<=60)){bad.push('pk-k');msg.push('偷看次數需介於 1 到 60。');}
+  if(!(N>=1000&&N<=200000)){bad.push('pk-n');msg.push('每組總樣本需介於 1,000 到 200,000。');}
+  if(!(M>=200&&M<=10000)){bad.push('pk-m');msg.push('實驗次數需介於 200 到 10,000。');}
+  PF.invalid(['pk-k','pk-n','pk-m'],bad);$('pk-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(bad.length||!QA.ab){QA.pk=null;renderQA();return;}
+  const p0=Math.min(0.99,Math.max(0.001,QA.ab.pa)),alpha=+$('ab-alpha').value/100,zc=PF.normInv(1-alpha/2);
+  const r=PF.rng(pkSeed),first=new Array(K+1).fill(0);let finalSig=0;
+  for(let m=0;m<M;m++){let na=0,nb=0,ca=0,cb=0,hit=0;
+    for(let k=1;k<=K;k++){const b=Math.round(N*k/K)-Math.round(N*(k-1)/K);na+=b;nb+=b;ca+=PF.binomRand(r,b,p0);cb+=PF.binomRand(r,b,p0);
+      const pp=(ca+cb)/(na+nb);if(pp<=0||pp>=1)continue;const z=(cb/nb-ca/na)/Math.sqrt(pp*(1-pp)*(2/na));
+      if(Math.abs(z)>zc){if(!hit)hit=k;if(k===K)finalSig++;}}
+    if(hit)first[hit]++;}
+  const cum=[];let c=0;for(let k=1;k<=K;k++){c+=first[k];cum.push([k,c/M]);}
+  const peekFPR=c/M,fixFPR=finalSig/M;
+  QA.pk={fixFPR,peekFPR,alpha,M};
+  PF.tiles($('pk-stats'),[
+    ['只看最後一次',pct(fixFPR,2),'名目 α = '+pct(alpha,1),'good'],
+    ['每批都看',pct(peekFPR,2),'偷看 '+K+' 次','alert'],
+    ['膨脹倍數',num(peekFPR/Math.max(alpha,1e-9),1)+' 倍','實驗 '+num(M)+' 次']]);
+  PF.chart($('pk-chart'),{label:'偷看次數與型一錯誤',x0:0.5,x1:K+0.5,y0:0,y1:Math.max(alpha*2,peekFPR*1.2),yFmt:v=>Math.round(v*100)+'%',xStep:K>20?5:K>10?2:1,
+    series:[{kind:'bar',pts:cum,color:'var(--bad)',op:0.75,width:0.7}],hmarks:[{y:alpha,color:'var(--muted)',label:'α = '+pct(alpha,1)}]});
+  renderQA();
+}
+
+/* ---------- 迴歸 ---------- */
+const VARS=[{k:'size',n:'坪數',t:32},{k:'rooms',n:'房間數',t:15},{k:'age',n:'屋齡（年）',t:-5},{k:'dist',n:'捷運距離（km）',t:-90}];
+const INTERCEPT=300,SIGMA=120;
+$('rg-vars').innerHTML=VARS.map(v=>`<label class="check"><input type="checkbox" id="rv-${v.k}" checked> ${v.n}</label>`).join('');
+let rgSeed=7;
+function genData(seed,n,noise){
+  const r=PF.rng(seed),rows=[];
+  for(let i=0;i<n;i++){const size=Math.min(90,Math.max(8,34+12*PF.randn(r)));
+    const rooms=Math.min(6,Math.max(1,Math.round(size/11+noise*PF.randn(r))));
+    const age=r()*45,dist=Math.min(5,-Math.log(1-r())*1.0);
+    const price=INTERCEPT+32*size+15*rooms-5*age-90*dist+SIGMA*PF.randn(r);
+    rows.push({size,rooms,age,dist,price});}
+  return rows;
+}
+const corr=(a,b)=>{const n=a.length,ma=a.reduce((s,v)=>s+v,0)/n,mb=b.reduce((s,v)=>s+v,0)/n;let sab=0,sa=0,sb=0;for(let i=0;i<n;i++){sab+=(a[i]-ma)*(b[i]-mb);sa+=(a[i]-ma)**2;sb+=(b[i]-mb)**2;}return sab/Math.sqrt(sa*sb);};
+function runReg(){
+  const n=Math.round(+$('rg-n').value),noise=+$('rg-noise').value;
+  const bad=[],msg=[];
+  if(!(n>=30&&n<=5000)){bad.push('rg-n');msg.push('樣本數需介於 30 到 5,000。');}
+  if(!(noise>=0.05&&noise<=3)){bad.push('rg-noise');msg.push('房間數雜訊需介於 0.05 到 3。');}
+  const used=VARS.filter(v=>$('rv-'+v.k).checked);
+  if(!used.length)msg.push('至少要選一個變數。');
+  PF.invalid(['rg-n','rg-noise'],bad);$('rg-err').innerHTML=msg.map(m=>`<div>${m}</div>`).join('');
+  if(msg.length){QA.rg=null;renderQA();return;}
+  const data=genData(rgSeed,n,noise),y=data.map(d=>d.price),X=data.map(d=>used.map(v=>d[v.k]));
+  const fit=PF.ols(X,y);
+  if(!fit){QA.rg={singular:true};$('rg-err').textContent='設計矩陣奇異（變數完全共線），無法估計。';renderQA();return;}
+  const vif=used.map((v,j)=>{if(used.length<2)return 1;const others=data.map(d=>used.filter((_,k)=>k!==j).map(u=>d[u.k]));const f=PF.ols(others,data.map(d=>d[v.k]));return f?1/Math.max(1e-12,1-f.r2):Infinity;});
+  const tc=PF.tCrit(fit.df,0.05);
+  const rows=[{n:'截距',t:INTERCEPT,i:0},...used.map((v,j)=>({n:v.n,t:v.t,i:j+1,vif:vif[j]}))];
+  $('rg-coef').innerHTML=rows.map(r=>{const b=fit.beta[r.i],s=fit.se[r.i],lo=b-tc*s,hi=b+tc*s,inside=r.t>=lo&&r.t<=hi;
+    return `<tr><td>${r.n}</td><td class="mono">${r.t}</td><td class="mono">${b.toFixed(2)}</td><td class="mono">${s.toFixed(2)}</td><td class="mono">${fit.t[r.i].toFixed(2)}</td><td class="mono">${fmtP(fit.p[r.i])}</td><td class="mono">${lo.toFixed(1)} ~ ${hi.toFixed(1)} ${inside?'':'<span class="pill bad">未含真值</span>'}</td><td class="mono">${r.vif==null?'—':r.vif>=10?`<span class="pill bad">${r.vif.toFixed(1)}</span>`:r.vif>=5?`<span class="pill info">${r.vif.toFixed(1)}</span>`:r.vif.toFixed(2)}</td></tr>`;}).join('');
+  const rc=corr(data.map(d=>d.size),data.map(d=>d.rooms));
+  const resid=y.map((v,i)=>v-fit.fit[i]),rmean=resid.reduce((a,b)=>a+b,0)/n;
+  QA.rg={n,p:used.length,maxVif:Math.max(...vif),rmean,s:fit.s,rc,df:fit.df};
+  PF.tiles($('rg-stats'),[['R²',fit.r2.toFixed(4),'調整後 '+fit.adj.toFixed(4),'hl'],['殘差標準誤',num(fit.s,1)+' 萬','真實 σ = '+SIGMA],['坪數與房間數相關',rc.toFixed(3),'皮爾森相關係數',Math.abs(rc)>0.8?'alert':''],['自由度',num(fit.df),'n − 變數數 − 1']]);
+  const lo=Math.min(...y,...fit.fit),hi=Math.max(...y,...fit.fit),pad=(hi-lo)*0.05;
+  const step=Math.max(1,Math.floor(n/600));const sub=[];for(let i=0;i<n;i+=step)sub.push(i);
+  PF.chart($('rg-fit'),{label:'實際 vs 預測',x0:lo-pad,x1:hi+pad,y0:lo-pad,y1:hi+pad,xn:5,yFmt:v=>num(v),xFmt:v=>num(v),
+    series:[{kind:'line',pts:[[lo-pad,lo-pad],[hi+pad,hi+pad]],stroke:'var(--muted)',dash:'4 3',sw:1.2},{kind:'dots',pts:sub.map(i=>[fit.fit[i],y[i]]),color:'var(--accent)',r:2.4,op:0.55}]});
+  const rmax=Math.max(...resid.map(Math.abs))*1.1;
+  PF.chart($('rg-res'),{label:'殘差圖',x0:lo-pad,x1:hi+pad,y0:-rmax,y1:rmax,xn:5,yFmt:v=>num(v),xFmt:v=>num(v),
+    series:[{kind:'dots',pts:sub.map(i=>[fit.fit[i],resid[i]]),color:'var(--c3)',r:2.4,op:0.55}]});
+  runRegMC(n,noise);
+  renderQA();
+}
+function runRegMC(n,noise){
+  const withS=[],without=[];
+  for(let k=0;k<200;k++){const d=genData(1000+k,n,noise),y=d.map(r=>r.price);
+    const a=PF.ols(d.map(r=>[r.size,r.rooms,r.age,r.dist]),y),b=PF.ols(d.map(r=>[r.rooms,r.age,r.dist]),y);
+    if(a)withS.push(a.beta[2]);if(b)without.push(b.beta[1]);}
+  const all=[...withS,...without,15];const lo=Math.min(...all),hi=Math.max(...all);const bins=50,bw=(hi-lo)/bins||1;
+  const hist=arr=>{const c=new Array(bins+1).fill(0);arr.forEach(v=>c[Math.min(bins,Math.floor((v-lo)/bw))]++);return c.map((x,i)=>[lo+(i+0.5)*bw,x/arr.length]);};
+  const h1=hist(withS),h2=hist(without);const ym=Math.max(...h1.map(p=>p[1]),...h2.map(p=>p[1]))*1.15;
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length,sd=a=>{const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/(a.length-1));};
+  $('rg-mc-note').textContent=`含坪數：平均 ${mean(withS).toFixed(1)}、標準差 ${sd(withS).toFixed(1)}；不含坪數：平均 ${mean(without).toFixed(1)}`;
+  PF.chart($('rg-mc'),{label:'房間數係數抽樣分布',x0:lo-bw,x1:hi+bw,y0:0,y1:ym,yFmt:v=>Math.round(v*100)+'%',xFmt:v=>num(v),
+    series:[{kind:'bar',pts:h1,color:'var(--accent)',op:0.7,width:1},{kind:'bar',pts:h2,color:'var(--c2)',op:0.7,width:1}],
+    vmarks:[{x:15,color:'var(--ink)',label:'真實值 15'}]});
+  if(QA.rg)QA.rg.bias=mean(without)-15;
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.ab){const a=QA.ab;
+    const e=(a.na+a.nb)/2,chi=(a.na-e)**2/e+(a.nb-e)**2/e,ps=PF.chi2Sf(chi,1);
+    rows.push(['AB-SRM','樣本比例不匹配檢查（預期 50/50 分流）',`A ${num(a.na)} / B ${num(a.nb)}，χ² = ${chi.toFixed(2)}，p = ${fmtP(ps)}`,ps<0.001?'bad':'ok']);
+    const mn=Math.min(a.ca,a.na-a.ca,a.cb,a.nb-a.cb);
+    rows.push(['AB-NORM','常態近似條件：每組點擊與未點擊數都 ≥ 10',`最小格數 ${num(mn)}`,mn>=10?'ok':'bad']);
+    rows.push(['AB-POW','檢定力是否達到目標',`目前 ${pct(a.power,1)}，每組需 ${num(a.nReq)} 筆`,a.power>=+$('ab-pow').value/100?'ok':'info']);}
+  if(QA.pk){const k=QA.pk,se=Math.sqrt(k.alpha*(1-k.alpha)/k.M),z=(k.fixFPR-k.alpha)/se;
+    rows.push(['PK-FIX','固定樣本數的誤判率 ≈ α（模擬正確性）',`${pct(k.fixFPR,2)} vs ${pct(k.alpha,1)}，z = ${z.toFixed(2)}`,Math.abs(z)<=3?'ok':'bad']);}
+  if(QA.rg){const g=QA.rg;
+    if(g.singular)rows.push(['RG-INV','設計矩陣可逆','完全共線，無法估計','bad']);
+    else{rows.push(['RG-INV','設計矩陣可逆（X′X 非奇異）','n = '+g.n+'，變數 '+g.p+' 個','ok']);
+      rows.push(['RG-RES','殘差平均 ≈ 0（含截距的 OLS 性質）','平均殘差 '+g.rmean.toExponential(2),Math.abs(g.rmean)<1e-6*Math.max(1,g.s)?'ok':'bad']);
+      rows.push(['RG-VIF','共線性：所有 VIF < 10','最大 VIF = '+(isFinite(g.maxVif)?g.maxVif.toFixed(2):'∞'),g.maxVif<10?'ok':'info']);
+      rows.push(['RG-N','每個變數至少 10 筆樣本','n / 變數數 = '+(g.n/g.p).toFixed(0),g.n/g.p>=10?'ok':'bad']);
+      if(g.bias!=null)rows.push(['RG-OVB','遺漏坪數時房間數係數的偏誤','平均偏誤 +'+g.bias.toFixed(1)+'（真值 15）','info']);}}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+
+const dAB=PF.debounce(runAB,250),dPk=PF.debounce(runPeek,300),dRg=PF.debounce(runReg,300);
+['ab-na','ab-ca','ab-nb','ab-cb','ab-alpha','ab-mde','ab-pow'].forEach(id=>$(id).addEventListener('input',dAB));
+['pk-k','pk-n','pk-m'].forEach(id=>$(id).addEventListener('input',dPk));
+['rg-n','rg-noise',...VARS.map(v=>'rv-'+v.k)].forEach(id=>$(id).addEventListener('input',dRg));
+$('pk-seed').addEventListener('click',()=>{pkSeed++;runPeek();});
+$('rg-seed').addEventListener('click',()=>{rgSeed++;runReg();});
+runAB();runReg();
+})();
+</script>
+</body>
+</html>

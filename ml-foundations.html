@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手刻貝氏分類器與馬可夫鏈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--accent:#5A44A0;--accent-soft:#E5E0F4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#A996EC;--accent-soft:#29233F}}
+:root[data-theme="dark"]{--accent:#A996EC;--accent-soft:#29233F}
+.tok{display:grid;grid-template-columns:70px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:13px}
+.tok .bar{height:10px;position:relative;background:var(--sunk);border-radius:3px}
+.tok .bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.tok .bar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted)}
+.toks{display:grid;gap:6px}
+.matrix table{table-layout:fixed}
+.matrix th,.matrix td{padding:5px 3px}
+.matrix th:first-child{width:40px}
+.matrix th:last-child{width:50px}
+.matrix td input{width:100%;padding:4px 4px}
+.corpus{max-height:260px;overflow:auto;font-size:13px}
+.corpus td{white-space:normal;text-align:left}
+.corpus td:first-child{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="index.html">← 作品集首頁</a>
+<header class="top">
+  <div class="eyebrow">專案 04 · ML / AI Math Foundations</div>
+  <h1>手刻貝氏分類器與馬可夫鏈</h1>
+  <p class="lede">不用任何機器學習套件，從公式直接寫出兩個模型。第一個是單純貝氏垃圾訊息過濾器，可以看到每個詞怎麼推動判斷；第二個是市場狀態的馬可夫鏈，計算多步轉移、穩態分布，再從模擬資料反推轉移矩陣。</p>
+  <nav class="toc" aria-label="章節"><a href="#nb">垃圾訊息過濾器</a><a href="#mc">馬可夫鏈</a><a href="#qa">模型檢查</a></nav>
+</header>
+
+<!-- Naive Bayes -->
+<section id="nb">
+  <div class="sec-head">
+    <span class="spec">4-A · Multinomial Naive Bayes</span>
+    <h2>垃圾訊息過濾器（貝氏定理）</h2>
+    <p>把訊息切成相鄰兩字的詞組，假設詞組彼此條件獨立，用貝氏定理算出「看到這些詞時是垃圾訊息」的後驗機率。拉普拉斯平滑避免沒看過的詞讓機率變成 0。準確率用留一法（每次拿掉一則當測試）評估。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>測試訊息</h3>
+      <textarea id="nb-msg" rows="4" aria-label="要判斷的訊息">恭喜您獲得限時免費好禮，立即點擊連結領取</textarea>
+      <div class="row">
+        <button class="btn" type="button" data-ex="明天下午開會前，記得把報告放到共用資料夾">範例：工作訊息</button>
+        <button class="btn" type="button" data-ex="您的包裹運費不足，請點擊連結補繳">範例：詐騙簡訊</button>
+        <button class="btn" type="button" data-ex="記得今天去管理室領取包裹">範例：模糊訊息</button>
+      </div>
+      <h3>模型參數</h3>
+      <div class="field"><label for="nb-alpha">平滑參數 α<small>拉普拉斯平滑，需 &gt; 0</small></label><input type="number" id="nb-alpha" value="1" min="0.01" max="10" step="0.1"></div>
+      <div class="field"><label for="nb-th">判定門檻 %<small>後驗機率超過即判垃圾</small></label><input type="number" id="nb-th" value="50" min="1" max="99" step="5"></div>
+      <div class="formula">P(垃圾 | 詞) ∝ P(垃圾) · Π P(wᵢ | 垃圾)<br>P(w | c) = (count(w,c) + α) / (N_c + α|V|)</div>
+      <div class="errors" id="nb-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="verdict" id="nb-verdict"></div>
+      <div class="two">
+        <div class="box">
+          <div class="cap"><h3>每個詞組的影響（對數概似比）</h3></div>
+          <div class="toks" id="nb-toks"></div>
+          <div class="note">往右推向垃圾訊息，往左推向正常訊息。沒在訓練資料出現過的詞組不影響判斷。</div>
+        </div>
+        <div class="box">
+          <div class="cap"><h3>留一法評估（48 則訊息）</h3></div>
+          <div class="stats" id="nb-stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
+          <div class="tbl-wrap" style="border:none">
+            <table aria-label="混淆矩陣"><thead><tr><th></th><th>預測：垃圾</th><th>預測：正常</th></tr></thead><tbody id="nb-cm"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="cap"><h3>訓練語料與留一法預測</h3><span class="note">自行撰寫的示範語料：24 則垃圾、24 則正常</span></div>
+        <div class="tbl-wrap corpus" style="border:none"><table aria-label="訓練語料"><thead><tr><th>標記</th><th>訊息</th><th>P(垃圾)</th></tr></thead><tbody id="nb-corpus"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Markov -->
+<section id="mc">
+  <div class="sec-head">
+    <span class="spec">4-B · Markov Chain</span>
+    <h2>市場狀態的馬可夫鏈</h2>
+    <p>把每天的市場分成上漲、盤整、下跌三種狀態，假設明天的狀態只跟今天有關。轉移矩陣決定一切：n 天後的狀態分布是 π₀Pⁿ，長期會收斂到與起點無關的穩態分布 π = πP。下方再模擬一段路徑，用狀態轉移的次數反推轉移矩陣，檢查估計是否回到真值。</p>
+  </div>
+  <div class="layout">
+    <div class="panel">
+      <h3>轉移矩陣 P（列 = 今天，欄 = 明天）</h3>
+      <div class="tbl-wrap matrix" style="border:none"><table aria-label="轉移矩陣"><thead><tr><th></th><th>上漲</th><th>盤整</th><th>下跌</th><th>列和</th></tr></thead><tbody id="mc-P"></tbody></table></div>
+      <button class="btn" id="mc-norm" type="button">把每列正規化成 1</button>
+      <div class="field"><label for="mc-s0">起始狀態</label><select id="mc-s0"><option value="0">上漲</option><option value="1">盤整</option><option value="2" selected>下跌</option></select></div>
+      <div class="field"><label for="mc-n">預測天數 n</label><input type="number" id="mc-n" value="20" min="1" max="100" step="1"></div>
+      <div class="field"><label for="mc-L">模擬天數<small>用來反推 P</small></label><input type="number" id="mc-L" value="2000" min="100" max="50000" step="500"></div>
+      <button class="btn" id="mc-seed" type="button">重新模擬路徑</button>
+      <div class="errors" id="mc-err" role="alert"></div>
+    </div>
+    <div class="results">
+      <div class="stats three" id="mc-stats"></div>
+      <div class="two">
+        <div class="box">
+          <div class="cap"><h3>n 天內的狀態機率</h3></div>
+          <div id="mc-dist"></div>
+          <div class="legend"><span><i style="background:var(--ok)"></i>上漲</span><span><i style="background:var(--muted)"></i>盤整</span><span><i style="background:var(--bad)"></i>下跌</span><span>虛線為穩態</span></div>
+        </div>
+        <div class="box">
+          <div class="cap"><h3>模擬指數走勢（前 250 天）</h3></div>
+          <div id="mc-path"></div>
+          <div class="note">起始 100 點。每日報酬依狀態抽樣：上漲 +1.0%、盤整 0%、下跌 −1.1%（附隨機波動）。點的顏色是當天狀態。</div>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table aria-label="轉移矩陣估計"><thead><tr><th>今天 → 明天</th><th>真實 P</th><th>估計 P̂</th><th>轉移次數</th><th>標準誤</th><th>z</th></tr></thead><tbody id="mc-est"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="sec-head"><span class="spec">模型檢查</span><h2>模型合法性與估計品質</h2>
+    <p>確認機率模型的基本性質成立（機率非負、總和為 1、穩態方程式成立），並檢查從資料學到的參數是否接近真值。</p></div>
+  <div class="row" id="qa-sum"></div>
+  <div class="qa" id="qa-list"></div>
+</section>
+
+<footer>示範用模型與自行撰寫的語料，市場狀態模擬不構成任何投資建議。所有計算都以手寫 JavaScript 在瀏覽器內完成，沒有使用機器學習套件。</footer>
+</div>
+
+<script src="assets/lib.js"></script>
+<script>
+(function(){
+const {$,num,pct,fmtP,esc}=PF;
+const QA={};
+
+/* ---------- 單純貝氏 ---------- */
+const SPAM=['恭喜您中獎了！請點擊連結領取iPhone大獎','限時優惠全館一折起，立即加LINE好友領券','您的帳戶出現異常，請立即點擊連結驗證身分','免費領取百元購物金，今天午夜截止','投資穩賺不賠，加入群組每月輕鬆賺十萬','免審核快速貸款，當天撥款，立即申請','您有一筆包裹未領取，請點擊連結補繳運費','獨家飆股明牌，老師帶你賺翻，免費加入','恭喜成為幸運會員，點擊領取專屬好禮','限量優惠只剩今天，立即下單享免運','您的信用卡已被凍結，請回電客服解除','在家輕鬆兼職，日領三千，免經驗','點擊連結立即領取政府補助金','最後通知：您的點數即將到期，請立即兌換','免費試用名額有限，立即登記領取','加入會員送現金紅包，邀請好友再加碼','您已獲得抽獎資格，請提供帳號領取獎金','超低利率信貸，免保人，立即諮詢','虛擬貨幣保證獲利，限時加入VIP群組','恭喜！您的手機號碼被抽中特獎','全館商品限時特價，點擊連結搶購','您的網路銀行需要重新驗證，請點擊連結登入','免費領取遊戲點數，名額有限立即領取','健康食品買一送一，今天下單再送好禮'];
+const HAM=['明天下午三點開會，記得帶上週的報告','晚餐想吃什麼？我在超市可以順便買','包裹已經放在管理室了，回家記得拿','週末要不要一起去爬山？天氣好像不錯','報告我看過了，第三頁的數字再確認一下','媽媽說這週日回家吃飯','會議改到週四上午十點，地點不變','你的筆記借我看一下，明天還你','今天加班，晚點才會到家','下週的簡報資料我已經放到共用資料夾','生日快樂！晚上幫你訂了蛋糕','車子送修了，明天可以載我一下嗎','這次的專案進度大概完成七成','我到捷運站了，你在哪個出口','老師說作業延到下週一交','下午的面試順利嗎？結果出來跟我說','冰箱的牛奶快過期了，記得先喝','合約我改好了，麻煩你再看一次','明天早上要量體溫，記得早點起床','電影票買好了，七點半在門口見','這週的數據報表已經更新，有問題再跟我說','客戶希望交期提前一週，我們討論一下','颱風要來了，記得把陽台的東西收進來','謝謝你的幫忙，改天請你喝咖啡'];
+const DOCS=[...SPAM.map(t=>({t,y:1})),...HAM.map(t=>({t,y:0}))];
+function tokenize(s){
+  const clean=s.toLowerCase().replace(/[a-z]+/g,'A').replace(/[0-9]+/g,'#').replace(/[^一-鿿A#]+/g,'|');
+  const out=[];clean.split('|').forEach(seg=>{const ch=[...seg];if(ch.length===1)out.push(ch[0]);for(let i=0;i+1<ch.length;i++)out.push(ch[i]+ch[i+1]);});return out;
+}
+DOCS.forEach(d=>d.tok=tokenize(d.t));
+function train(skip){
+  const cnt=[new Map(),new Map()],tot=[0,0],nd=[0,0];
+  DOCS.forEach((d,i)=>{if(i===skip)return;nd[d.y]++;d.tok.forEach(w=>{cnt[d.y].set(w,(cnt[d.y].get(w)||0)+1);tot[d.y]++;});});
+  const V=new Set([...cnt[0].keys(),...cnt[1].keys()]);
+  return{cnt,tot,nd,V};
+}
+function score(m,toks,alpha){
+  const V=m.V.size,lp=[Math.log(m.nd[0]/(m.nd[0]+m.nd[1])),Math.log(m.nd[1]/(m.nd[0]+m.nd[1]))];const contrib=[];
+  toks.forEach(w=>{if(!m.V.has(w))return;const l=[0,1].map(c=>Math.log(((m.cnt[c].get(w)||0)+alpha)/(m.tot[c]+alpha*V)));lp[0]+=l[0];lp[1]+=l[1];contrib.push([w,l[1]-l[0]]);});
+  const mx=Math.max(lp[0],lp[1]),e0=Math.exp(lp[0]-mx),e1=Math.exp(lp[1]-mx);
+  return{p:e1/(e0+e1),p0:e0/(e0+e1),contrib,lp};
+}
+function runNB(){
+  const alpha=+$('nb-alpha').value,th=+$('nb-th').value/100,msg=$('nb-msg').value.trim();
+  const bad=[],m=[];
+  if(!(alpha>=0.01&&alpha<=10)){bad.push('nb-alpha');m.push('平滑參數需介於 0.01 到 10；α = 0 會讓沒看過的詞機率變成 0。');}
+  if(!(th>=0.01&&th<=0.99)){bad.push('nb-th');m.push('判定門檻需介於 1% 到 99%。');}
+  PF.invalid(['nb-alpha','nb-th'],bad);$('nb-err').innerHTML=m.map(x=>`<div>${x}</div>`).join('');
+  if(bad.length){QA.nb=null;renderQA();return;}
+  const full=train(-1);
+  // 測試訊息
+  if(!msg){$('nb-verdict').innerHTML='<span class="pill info">等待輸入</span><span>在左邊輸入一則訊息，或點範例按鈕。</span>';$('nb-toks').innerHTML='';}
+  else{const s=score(full,tokenize(msg),alpha);const spam=s.p>=th;const known=s.contrib.length;
+    $('nb-verdict').innerHTML=known?`<span class="pill ${spam?'bad':'ok'}">${spam?'垃圾訊息':'正常訊息'}</span><span>P(垃圾 | 訊息) = <b class="mono">${pct(s.p,2)}</b>，門檻 ${pct(th,0)}。共 ${known} 個詞組出現在訓練資料中。</span>`
+      :`<span class="pill info">無法判斷</span><span>訊息中的詞組都沒出現在訓練資料，只能依先驗機率 ${pct(s.p,0)} 判斷。</span>`;
+    const top=s.contrib.slice().sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,10);const mx=Math.max(1e-9,...top.map(t=>Math.abs(t[1])));
+    $('nb-toks').innerHTML=top.length?top.map(([w,v])=>{const wd=Math.abs(v)/mx*50;return `<div class="tok"><span class="mono">${esc(w)}</span><span class="bar"><i style="${v>=0?`left:50%;width:${wd}%;background:var(--bad)`:`right:50%;width:${wd}%;background:var(--ok)`}"></i></span><span class="mono" style="text-align:right">${v>=0?'+':''}${v.toFixed(2)}</span></div>`;}).join(''):'<p class="note">沒有可用的詞組。</p>';
+    QA.nbMsg={sum:s.p+s.p0};}
+  // 留一法
+  let tp=0,fp=0,tn=0,fn=0;const preds=DOCS.map((d,i)=>{const s=score(train(i),d.tok,alpha);const y=s.p>=th?1:0;if(y&&d.y)tp++;else if(y)fp++;else if(d.y)fn++;else tn++;return s.p;});
+  const acc=(tp+tn)/DOCS.length,prec=tp/Math.max(1,tp+fp),rec=tp/Math.max(1,tp+fn),f1=2*prec*rec/Math.max(1e-9,prec+rec);
+  QA.nb={acc,V:full.V.size,prec,rec};
+  PF.tiles($('nb-stats'),[['準確率',pct(acc,1),(tp+tn)+' / '+DOCS.length,'hl'],['F1',f1.toFixed(3),'精確率 '+pct(prec,0)+'，召回率 '+pct(rec,0)],['詞彙量 |V|',num(full.V.size),'相鄰兩字詞組'],['誤判正常為垃圾',fp+' 則','偽陽性',fp?'alert':'good']]);
+  $('nb-cm').innerHTML=`<tr><td>實際：垃圾</td><td class="mono">${tp}</td><td class="mono">${fn}</td></tr><tr><td>實際：正常</td><td class="mono">${fp}</td><td class="mono">${tn}</td></tr>`;
+  $('nb-corpus').innerHTML=DOCS.map((d,i)=>{const ok=(preds[i]>=th?1:0)===d.y;return `<tr><td><span class="pill ${d.y?'bad':'ok'}">${d.y?'垃圾':'正常'}</span></td><td>${esc(d.t)}</td><td class="mono">${pct(preds[i],1)}${ok?'':' <span class="pill info">誤判</span>'}</td></tr>`;}).join('');
+  renderQA();
+}
+
+/* ---------- 馬可夫鏈 ---------- */
+const ST=['上漲','盤整','下跌'],COL=['var(--ok)','var(--muted)','var(--bad)'];
+const P0=[[0.55,0.30,0.15],[0.25,0.50,0.25],[0.20,0.30,0.50]];
+$('mc-P').innerHTML=ST.map((s,i)=>`<tr><td>${s}</td>${[0,1,2].map(j=>`<td><input type="number" id="p-${i}-${j}" value="${P0[i][j]}" min="0" max="1" step="0.05" aria-label="${s} 轉 ${ST[j]}"></td>`).join('')}<td class="mono" id="ps-${i}"></td></tr>`).join('');
+const mul=(v,P)=>[0,1,2].map(j=>v[0]*P[0][j]+v[1]*P[1][j]+v[2]*P[2][j]);
+const mm=(A,B)=>A.map(r=>mul(r,B));
+let mcSeed=17;
+function readP(){
+  const P=[[],[],[]],bad=[];let msg=[];
+  for(let i=0;i<3;i++){let s=0;for(let j=0;j<3;j++){const v=+$(`p-${i}-${j}`).value;if(!(v>=0&&v<=1))bad.push(`p-${i}-${j}`);P[i][j]=v;s+=v;}
+    $('ps-'+i).innerHTML=Math.abs(s-1)<=1e-3?s.toFixed(3):`<span class="pill bad">${s.toFixed(3)}</span>`;
+    if(Math.abs(s-1)>1e-3)msg.push(`「${ST[i]}」這一列加總是 ${s.toFixed(3)}，必須等於 1。可以按「把每列正規化成 1」。`);}
+  if(bad.length)msg.unshift('轉移機率必須介於 0 和 1 之間。');
+  PF.invalid([0,1,2].flatMap(i=>[0,1,2].map(j=>`p-${i}-${j}`)),bad);
+  return{P,msg};
+}
+function stationary(P){ // 解 π(P−I)=0, Σπ=1
+  const A=[[P[0][0]-1,P[1][0],P[2][0]],[P[0][1],P[1][1]-1,P[2][1]],[1,1,1]];const inv=PF.inv(A);if(!inv)return null;return inv.map(r=>r[2]);
+}
+function runMC(){
+  const {P,msg}=readP();const n=Math.round(+$('mc-n').value),L=Math.round(+$('mc-L').value),s0=+$('mc-s0').value;
+  const bad=[];if(!(n>=1&&n<=100)){bad.push('mc-n');msg.push('預測天數需介於 1 到 100。');}
+  if(!(L>=100&&L<=50000)){bad.push('mc-L');msg.push('模擬天數需介於 100 到 50,000。');}
+  PF.invalid(['mc-n','mc-L'],bad);$('mc-err').innerHTML=msg.map(x=>`<div>${x}</div>`).join('');
+  if(msg.length){QA.mc=null;renderQA();return;}
+  const pi=stationary(P);
+  if(!pi||pi.some(v=>v<-1e-12)){$('mc-err').textContent='這個轉移矩陣沒有唯一的穩態分布（可能有互不相通的狀態）。';QA.mc=null;renderQA();return;}
+  let v=[0,0,0];v[s0]=1;const hist=[v];let mixDay=null;
+  for(let t=1;t<=n;t++){v=mul(v,P);hist.push(v);const tv=0.5*v.reduce((a,x,i)=>a+Math.abs(x-pi[i]),0);if(mixDay==null&&tv<0.01)mixDay=t;}
+  if(mixDay==null){let w=v.slice();for(let t=n+1;t<=2000;t++){w=mul(w,P);if(0.5*w.reduce((a,x,i)=>a+Math.abs(x-pi[i]),0)<0.01){mixDay=t;break;}}}
+  const res=mul(pi,P).reduce((a,x,i)=>Math.max(a,Math.abs(x-pi[i])),0);
+  let Pk=P,regular=false;for(let k=1;k<=9;k++){if(Pk.every(r=>r.every(x=>x>0))){regular=k;break;}Pk=mm(Pk,P);}
+  PF.tiles($('mc-stats'),[
+    ['穩態分布 π',pi.map(x=>pct(x,1)).join(' / '),'上漲 / 盤整 / 下跌','hl'],
+    ['平均回訪天數 1/π',pi.map(x=>x>0?num(1/x,2):'∞').join(' / '),'離開某狀態後平均幾天回來'],
+    ['收斂天數',mixDay?mixDay+' 天':'> 2000 天','距離穩態的總變異 < 1%']]);
+  const series=[0,1,2].map(i=>({kind:'line',pts:hist.map((h,t)=>[t,h[i]]),stroke:COL[i]}));
+  [0,1,2].forEach(i=>series.push({kind:'line',pts:[[0,pi[i]],[n,pi[i]]],stroke:COL[i],dash:'4 3',sw:1,op:0.8}));
+  PF.chart($('mc-dist'),{label:'n 步狀態分布',x0:0,x1:n,y0:0,y1:1,yStep:0.25,yFmt:v=>Math.round(v*100)+'%',series});
+  // 模擬路徑與估計
+  const r=PF.rng(mcSeed),mu=[0.010,0,-0.011],sd=[0.008,0.004,0.009];
+  let s=s0,price=100;const seq=[s],pts=[[0,100,COL[s]]],line=[[0,100]];
+  for(let t=1;t<L;t++){const u=r();s=u<P[s][0]?0:u<P[s][0]+P[s][1]?1:2;seq.push(s);
+    if(t<250){price*=1+mu[s]+sd[s]*PF.randn(r);pts.push([t,price,COL[s]]);line.push([t,price]);}}
+  const ys=line.map(p=>p[1]),lo=Math.min(...ys),hi=Math.max(...ys),pad=(hi-lo)*0.08||1;
+  PF.chart($('mc-path'),{label:'模擬指數走勢',x0:0,x1:line.length-1,y0:lo-pad,y1:hi+pad,yFmt:v=>num(v,0),
+    series:[{kind:'line',pts:line,stroke:'var(--ink)',sw:1,op:0.35},{kind:'dots',pts,r:2.2,op:0.9}]});
+  const C=[[0,0,0],[0,0,0],[0,0,0]];for(let t=1;t<seq.length;t++)C[seq[t-1]][seq[t]]++;
+  let maxZ=0;const rows=[];
+  for(let i=0;i<3;i++){const ni=C[i][0]+C[i][1]+C[i][2];for(let j=0;j<3;j++){const ph=ni?C[i][j]/ni:0,se=ni?Math.sqrt(P[i][j]*(1-P[i][j])/ni):0,z=se>0?(ph-P[i][j])/se:0;maxZ=Math.max(maxZ,Math.abs(z));
+    rows.push(`<tr><td>${ST[i]} → ${ST[j]}</td><td class="mono">${P[i][j].toFixed(3)}</td><td class="mono">${ph.toFixed(3)}</td><td class="mono">${C[i][j]} / ${ni}</td><td class="mono">${se.toFixed(4)}</td><td class="mono">${Math.abs(z)>3?`<span class="pill bad">${z.toFixed(2)}</span>`:z.toFixed(2)}</td></tr>`);}}
+  $('mc-est').innerHTML=rows.join('');
+  const occ=[0,1,2].map(i=>seq.filter(x=>x===i).length/seq.length);
+  QA.mc={P,pi,res,regular,maxZ,occ,L};
+  renderQA();
+}
+
+/* ---------- 檢查 ---------- */
+function renderQA(){
+  const rows=[];
+  if(QA.nb){rows.push(['NB-ALPHA','拉普拉斯平滑 α > 0（沒看過的詞不會讓機率歸零）','α = '+$('nb-alpha').value,'ok']);
+    if(QA.nbMsg)rows.push(['NB-SUM','後驗機率 P(垃圾) + P(正常) = 1','Σ = '+QA.nbMsg.sum.toFixed(12),Math.abs(QA.nbMsg.sum-1)<1e-12?'ok':'bad']);
+    rows.push(['NB-LOO','留一法準確率 ≥ 85%',pct(QA.nb.acc,1)+'（詞彙量 '+QA.nb.V+'）',QA.nb.acc>=0.85?'ok':'info']);
+    rows.push(['NB-DATA','訓練資料規模','48 則示範語料；實務上需要數千則真實訊息才能可靠評估','info']);}
+  if(QA.mc){const m=QA.mc;
+    rows.push(['MC-ROW','轉移矩陣每列和 = 1、元素非負','已通過輸入驗證','ok']);
+    rows.push(['MC-PI','穩態方程式 πP = π','最大殘差 '+m.res.toExponential(2),m.res<1e-10?'ok':'bad']);
+    rows.push(['MC-REG','正則鏈（某個 Pᵏ 全部元素 > 0，保證收斂且穩態唯一）',m.regular?'k = '+m.regular:'9 步內未全為正',m.regular?'ok':'info']);
+    rows.push(['MC-EST','從模擬路徑估計的 P̂ 落在真值 ±3 標準誤內','最大 |z| = '+m.maxZ.toFixed(2)+'（'+num(m.L)+' 天）',m.maxZ<=3?'ok':'info']);
+    const tv=0.5*m.occ.reduce((a,x,i)=>a+Math.abs(x-m.pi[i]),0);
+    rows.push(['MC-ERG','遍歷性：路徑上各狀態佔比 ≈ 穩態 π','佔比 '+m.occ.map(x=>pct(x,1)).join(' / ')+'，總變異 '+pct(tv,2),tv<0.05?'ok':'info']);}
+  PF.checks($('qa-list'),$('qa-sum'),rows);
+}
+
+const dNB=PF.debounce(runNB,250),dMC=PF.debounce(runMC,250);
+['nb-msg','nb-alpha','nb-th'].forEach(id=>$(id).addEventListener('input',dNB));
+document.querySelectorAll('[data-ex]').forEach(b=>b.addEventListener('click',()=>{$('nb-msg').value=b.dataset.ex;runNB();}));
+document.querySelectorAll('#mc input,#mc select').forEach(el=>el.addEventListener('input',dMC));
+$('mc-norm').addEventListener('click',()=>{for(let i=0;i<3;i++){const v=[0,1,2].map(j=>Math.max(0,+$(`p-${i}-${j}`).value||0));const s=v.reduce((a,b)=>a+b,0)||1;v.forEach((x,j)=>$(`p-${i}-${j}`).value=+(x/s).toFixed(4));}runMC();});
+$('mc-seed').addEventListener('click',()=>{mcSeed++;runMC();});
+runNB();runMC();
+})();
+</script>
+</body>
+</html>
