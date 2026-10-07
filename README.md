@@ -27,7 +27,7 @@
 
 ## 技術說明
 
-- 純 HTML / CSS / JavaScript，不需要安裝或建置，直接開 `[index.html](https://lilboog.github.io/slot-machine-demo-portfolio/)` 即可
+- 純 HTML / CSS / JavaScript，不需要安裝或建置，直接開 (https://lilboog.github.io/slot-machine-demo-portfolio/) 即可
 - 不使用統計或機器學習套件：常態／卡方／t 分布函數、矩陣反運算、最小平方法、貝氏分類器都是手寫（`assets/lib.js`）
 - 老虎機的數學引擎集中在 `assets/slot-engine.js`，五個章節共用；第 1 章的配置透過瀏覽器 localStorage 傳給其他章節
 - 模擬使用可重現的 mulberry32 亂數產生器（固定種子）
