@@ -1,10 +1,8 @@
 # 機率與統計作品集
 
-用數據說故事，把抽象的數學變成可以操作的東西。
 
 主軸專案用一台虛構老虎機，走完一個機率產品從設計、認證、上線到營運的完整數據流程；四個基礎專案則把同樣的方法放在通用情境裡。所有頁面都可以直接在瀏覽器操作，模擬結果都會跟理論值對照，並附上自動化的結果檢查。
 
-**線上瀏覽：** 啟用 GitHub Pages 後，網址為 `https://<帳號>.github.io/portfolio-demos/`
 
 ## 主軸專案：金鯉躍門，一台老虎機的數據生命週期
 
@@ -33,7 +31,7 @@
 
 ## 技術說明
 
-- 純 HTML / CSS / JavaScript，不需要安裝或建置，直接開 `index.html` 即可
+- 純 HTML / CSS / JavaScript，不需要安裝或建置，直接開 (https://lilboog.github.io/slot-machine-demo-portfolio/) 即可
 - 不使用統計或機器學習套件：常態／卡方／t 分布函數、矩陣反運算、最小平方法、貝氏分類器都是手寫（`assets/lib.js`）
 - 老虎機的數學引擎集中在 `assets/slot-engine.js`，五個章節共用；第 1 章的配置透過瀏覽器 localStorage 傳給其他章節
 - 模擬使用可重現的 mulberry32 亂數產生器（固定種子）
