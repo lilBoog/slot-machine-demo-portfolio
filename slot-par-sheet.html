@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>body{margin:0}</style>
-<title>金鯉躍門 PAR 表</title>
+<title>金鯉躍門 數值規格表</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap">
 <style>
-/* 版面：頂部「機台」試玩 + 規格書；下方依 PAR 表章節由上而下：輪帶 → RTP 拆解 → 模擬 → 敏感度 → 驗證 */
+/* 版面：頂部「機台」試玩 + 規格書；下方依 數值規格表章節由上而下：輪帶 → RTP 拆解 → 模擬 → 敏感度 → 驗證 */
 :root{
   --bg:#F3F2F0; --surface:#FFFFFF; --sunk:#E9E7E3; --ink:#1D1916; --muted:#625A53; --line:#D9D5CF;
   --lacquer:#A82C1C; --lacquer-soft:#F3DCD6; --gold:#94690C; --gold-soft:#F2E5C2;
@@ -150,7 +150,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <div class="wrap">
 <a href="index.html" style="display:inline-block;font-size:13px;text-decoration:none;color:var(--muted);margin-bottom:18px">← 作品集首頁</a>
 <nav class="chapters" aria-label="金鯉躍門章節">
-  <a href="slot-par-sheet.html" class="on" aria-current="page"><span class="n">1</span><span><b>設計</b><small>PAR 表</small></span></a>
+  <a href="slot-par-sheet.html" class="on" aria-current="page"><span class="n">1</span><span><b>設計</b><small>數值規格表</small></span></a>
   <a href="slot-verify.html"><span class="n">2</span><span><b>驗證</b><small>RNG 與送審</small></span></a>
   <a href="slot-player.html"><span class="n">3</span><span><b>玩家體驗</b><small>破產與時長</small></span></a>
   <a href="slot-monitor.html"><span class="n">4</span><span><b>上線監控</b><small>例行報表</small></span></a>
@@ -159,8 +159,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <header class="hero">
   <div class="hero-text">
     <div class="eyebrow">金鯉躍門 · 第 1 章 · 設計</div>
-    <h1>金鯉躍門 PAR 表</h1>
-    <p class="lede">一台 5 軸 × 3 列、20 條固定線的虛構視訊老虎機。這一章從輪帶配置寫到完整的 PAR 表，在這裡調整的配置會自動套用到第 2–5 章：精確 RTP 拆解（主遊戲連線、分散符號、免費遊戲）、30 萬轉模擬驗證、波動度指標、輪帶敏感度分析，以及送審前的規格檢查。右邊的機台使用同一組輪帶，可以直接試轉。</p>
+    <h1>金鯉躍門 數值規格表</h1>
+    <p class="lede">一台 5 軸 × 3 列、20 條固定線的虛構視訊老虎機。這一章從輪帶配置寫到完整的 數值規格表，在這裡調整的配置會自動套用到第 2–5 章：精確 RTP 拆解（主遊戲連線、分散符號、免費遊戲）、30 萬轉模擬驗證、波動度指標、輪帶敏感度分析，以及送審前的規格檢查。右邊的機台使用同一組輪帶，可以直接試轉。</p>
     <div class="facts" id="facts"></div>
     <nav class="toc" aria-label="章節">
       <a href="#rules">遊戲規格</a><a href="#reels">輪帶與賠率</a><a href="#rtp">RTP 拆解</a><a href="#sim">模擬與波動度</a><a href="#sens">敏感度分析</a><a href="#qa">送審檢查</a>
@@ -245,7 +245,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <!-- RTP -->
 <section id="rtp">
   <div class="sec-head">
-    <span class="spec">PAR-1 · 理論返還率</span>
+    <span class="spec">1-A · 理論返還率</span>
     <h2>RTP 拆解</h2>
     <p>主遊戲連線用全組合窮舉：每條線在各軸的符號分布彼此獨立，所以 20 條線的期望值相同，窮舉一條線的所有符號組合即可得精確值。免費遊戲含重觸發，期望場次為 F ÷ (1 − F·P)。</p>
   </div>
@@ -267,7 +267,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <!-- 模擬 -->
 <section id="sim">
   <div class="sec-head">
-    <span class="spec">PAR-2 · 蒙地卡羅驗證</span>
+    <span class="spec">1-B · 蒙地卡羅驗證</span>
     <h2>模擬與波動度</h2>
     <p>用實際排好的輪帶（分散符號等距擺放，其餘符號以固定種子洗牌）跑完整遊戲流程，包含免費遊戲與重觸發。命中率、標準差這類需要 20 條線一起看的指標，以模擬結果為準。</p>
   </div>
@@ -293,7 +293,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <!-- 敏感度 -->
 <section id="sens">
   <div class="sec-head">
-    <span class="spec">PAR-3 · 調參工具</span>
+    <span class="spec">1-C · 調參工具</span>
     <h2>輪帶敏感度分析</h2>
     <p>每一格代表「在該軸多放 1 個停點」後 RTP 的變化（百分點）。調整 RTP 時可以直接找影響最大或最小的位置下手，例如要微調 0.1% 就挑數值接近的格子。綠色提高 RTP，紅色降低。</p>
   </div>

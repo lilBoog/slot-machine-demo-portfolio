@@ -101,7 +101,7 @@ guide = [
     ("欄位定義", ""),
     ("實際 RTP", "總派彩 ÷ 總投注。派彩包含該轉觸發的免費遊戲贏分"),
     ("等效轉數", "總投注 ÷ 20。押注大小不同時，換算成「每線 1 點」的轉數，用來計算標準誤"),
-    ("標準誤", "σ ÷ √等效轉數。σ 為 PAR 表的單局標準差（× 總押注）"),
+    ("標準誤", "σ ÷ √等效轉數。σ 為 數值規格表的單局標準差（× 總押注）"),
     ("z 值", "(實際 RTP − 理論 RTP) ÷ 標準誤。|z| 超過門檻即警示"),
     ("觸發偏差 z", "(實際觸發次數 − 期望觸發次數) ÷ √期望次數。觸發次數近似卜瓦松分布"),
     ("累計 RTP", "月初至當日的總派彩 ÷ 總投注。轉數越多越接近理論值"),
@@ -119,7 +119,7 @@ ws.column_dimensions["B"].width = 95
 
 # ---------- 遊戲設定 ----------
 ws = wb.create_sheet("遊戲設定")
-title(ws, "遊戲設定（來源：games 資料表／PAR 表）")
+title(ws, "遊戲設定（來源：games 資料表／數值規格表）")
 header(ws, 4, ["版本", "理論 RTP", "單局標準差 σ", "觸發率", "平均免費場次", "上線日", "結束日", "說明"], [10, 12, 14, 12, 14, 12, 12, 46])
 games = con.execute("SELECT version, theoretical_rtp, sigma, trigger_rate, avg_fg_spins, release_date, end_date, note FROM games ORDER BY release_date").fetchall()
 for r, g in enumerate(games, 5):
@@ -142,7 +142,7 @@ put(ws, 12, 1, "等效轉數基準", F_BOLD)
 put(ws, 12, 2, 20, F_INPUT, INT, FILL_INPUT)
 ws["C12"] = "每線 1 點 × 20 線 = 每轉 20 點"
 ws["C12"].font = F_NOTE
-ws["A13"] = "理論 RTP、σ、觸發率依 PAR 表規格；v1.3 的規格與 v1.2 相同，實際上線版本的設定錯誤不會反映在理論值上，這正是要靠報表抓出來的差異。"
+ws["A13"] = "理論 RTP、σ、觸發率依 數值規格表；v1.3 的規格與 v1.2 相同，實際上線版本的設定錯誤不會反映在理論值上，這正是要靠報表抓出來的差異。"
 ws["A13"].font = F_NOTE
 ws.freeze_panes = "A5"
 
@@ -319,7 +319,7 @@ ws = wb.active
 ws.title = "摘要"
 title(ws, "金鯉躍門 v1.3.1 驗收摘要", "示範文件：情境為 v1.3 上線後被報表發現設定錯誤，修正版 v1.3.1 的驗收紀錄")
 info = [("遊戲", "金鯉躍門"), ("驗收版本", "v1.3.1"), ("驗收期間", "2026-09-24 ～ 2026-09-25"), ("驗收人員", "（填入姓名）"),
-        ("驗收依據", "遊戲規格書 v1.3、PAR 表 2026-08、Bug 清單 BUG-01")]
+        ("驗收依據", "遊戲規格書 v1.3、數值規格表 2026-08、Bug 清單 BUG-01")]
 for i, (k, v) in enumerate(info, 4):
     put(ws, i, 1, k, F_BOLD, fill=FILL_SUB)
     put(ws, i, 2, v, F_INPUT, fill=FILL_INPUT)
@@ -343,7 +343,7 @@ put(ws, 25, 1, "驗收結論", F_BOLD, fill=FILL_SUB)
 put(ws, 25, 2, '=IF(AND(B19=0,B21=0,B22="通過",B23="通過"),IF(B20=0,"可上線","可上線（"&B20&" 項中低嚴重度問題列入後續修正）"),"不可上線")', F_BOLD, fill=FILL_SUB)
 ws.conditional_formatting.add("B25", FormulaRule(formula=['LEFT($B$25,3)="可上線"'], fill=GREEN_FILL))
 ws.conditional_formatting.add("B25", FormulaRule(formula=['$B$25="不可上線"'], fill=RED_FILL))
-ws["A27"] = "結論規則：高嚴重度 Bug 全部關閉、設定與 PAR 表完全一致、數學驗收通過，才可上線。"
+ws["A27"] = "結論規則：高嚴重度 Bug 全部關閉、設定與 數值規格表完全一致、數學驗收通過，才可上線。"
 ws["A27"].font = F_NOTE
 ws.column_dimensions["A"].width = 26
 ws.column_dimensions["B"].width = 60
@@ -354,8 +354,8 @@ tc_cols = ["編號", "類別", "測試項目", "前置條件", "步驟／盤面"
 header(ws, 1, tc_cols, [8, 10, 24, 20, 30, 28, 22, 8, 7, 9, 28])
 P = "通過"
 cases = [
-    ("設定核對", "輪帶停點數與 PAR 表一致", "取得 v1.3.1 匯出設定", "依「設定核對」頁逐項比對 50 項", "全部一致", "全部一致", P, "", "", ""),
-    ("設定核對", "賠率表與 PAR 表一致", "同上", "逐項比對 27 項賠率", "全部一致", "全部一致", P, "", "", ""),
+    ("設定核對", "輪帶停點數與 數值規格表一致", "取得 v1.3.1 匯出設定", "依「設定核對」頁逐項比對 50 項", "全部一致", "全部一致", P, "", "", ""),
+    ("設定核對", "賠率表與 數值規格表一致", "同上", "逐項比對 27 項賠率", "全部一致", "全部一致", P, "", "", ""),
     ("設定核對", "分散賠付與免費遊戲設定一致", "同上", "比對分散賠付 3 項、免費場次、免費倍數", "全部一致", "全部一致", P, "", "", "v1.3 的免費倍數為 3，見 BUG-01"),
     ("連線判定", "基本 3 連", "每線押 1，測試模式指定停輪", "第 1 線：寶 寶 寶 J Q", "寶 3 連，贏 50", "贏 50", P, "", "", ""),
     ("連線判定", "基本 4 連", "同上", "第 1 線：寶 寶 寶 寶 Q", "寶 4 連，贏 200", "贏 200", P, "", "", ""),
@@ -413,7 +413,7 @@ ws.cell(row=TC_LAST + 2, column=1, value="黃底藍字為測試人員填寫欄�
 
 # ---------- 設定核對 ----------
 ws = wb.create_sheet("設定核對")
-header(ws, 1, ["參數", "說明", "PAR 表規格", "v1.3 實際", "v1.3.1 實際", "v1.3 判定", "v1.3.1 判定"], [16, 30, 11, 11, 11, 11, 11])
+header(ws, 1, ["參數", "說明", "數值規格表", "v1.3 實際", "v1.3.1 實際", "v1.3 判定", "v1.3.1 判定"], [16, 30, 11, 11, 11, 11, 11])
 par = con.execute("SELECT param, description, value FROM config_par").fetchall()
 build = {(v, p): val for v, p, val in con.execute("SELECT version, param, value FROM config_build")}
 for i, (p, desc, val) in enumerate(par, 2):
@@ -432,13 +432,13 @@ for c in (3, 4, 5):
     put(ws, PL + 1, c, None, fill=FILL_SUB)
 put(ws, PL + 1, 6, f'=COUNTIF(F2:F{PL},"不一致")', F_BOLD, INT, FILL_SUB)
 put(ws, PL + 1, 7, f'=COUNTIF(G2:G{PL},"不一致")', F_BOLD, INT, FILL_SUB)
-ws.cell(row=PL + 3, column=1, value="資料來源：jinli.db 的 config_par（PAR 表）與 config_build（開發匯出的實際設定）；也可用 queries.sql [Q07] 直接列出不一致項目。").font = F_NOTE
+ws.cell(row=PL + 3, column=1, value="資料來源：jinli.db 的 config_par（數值規格表）與 config_build（開發匯出的實際設定）；也可用 queries.sql [Q07] 直接列出不一致項目。").font = F_NOTE
 ws.freeze_panes = "A2"
 ws.auto_filter.ref = f"A1:G{PL}"
 
 # ---------- 數學驗收 ----------
 ws = wb.create_sheet("數學驗收")
-title(ws, "數學驗收：100 萬轉模擬 vs PAR 表理論值")
+title(ws, "數學驗收：100 萬轉模擬 vs 數值規格表理論值")
 spec = analytic(DEFAULT)
 sig = float(con.execute("SELECT sigma FROM games WHERE version='v1.3.1'").fetchone()[0])
 sims = {}
@@ -452,9 +452,9 @@ rows = [
     ("總派彩", "含免費遊戲贏分", "win", INT, True),
     ("觸發次數", "主遊戲觸發免費遊戲的次數", "trig", INT, True),
     ("免費遊戲總場次", "含再觸發", "fgs", INT, True),
-    ("理論 RTP", "PAR 表", "theo", PCT, True),
-    ("單局標準差 σ", "PAR 表（× 總押注）", "sig", "0.0000", True),
-    ("理論觸發率", "PAR 表", "pt", "0.000%", True),
+    ("理論 RTP", "數值規格表", "theo", PCT, True),
+    ("單局標準差 σ", "數值規格表（× 總押注）", "sig", "0.0000", True),
+    ("理論觸發率", "數值規格表", "pt", "0.000%", True),
     ("理論平均免費場次", "F ÷ (1 − F·p)", "efg", DEC2, True),
 ]
 for i, (k, d, key, fmt, is_in) in enumerate(rows, 4):

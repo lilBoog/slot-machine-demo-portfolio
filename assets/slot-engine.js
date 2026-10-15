@@ -1,4 +1,4 @@
-/* 金鯉躍門共用數學引擎：符號、連線、預設 PAR 配置、單線評估、解析 RTP、輪帶排列與完整遊戲流程。
+/* 金鯉躍門共用數學引擎：符號、連線、預設數值配置、單線評估、解析 RTP、輪帶排列與完整遊戲流程。
    第 1 章調整的配置存在 localStorage（jinli-config），第 2–5 章讀取同一份。 */
 (function(){
 const S={};
@@ -83,7 +83,7 @@ S.chunked=function(total,size,step,onProgress,onDone){
 };
 
 /* 章節導覽與配置說明 */
-S.CH=[{f:'slot-par-sheet.html',n:'1',t:'設計',d:'PAR 表'},{f:'slot-verify.html',n:'2',t:'驗證',d:'RNG 與送審'},{f:'slot-player.html',n:'3',t:'玩家體驗',d:'破產與時長'},{f:'slot-monitor.html',n:'4',t:'上線監控',d:'例行報表'},{f:'slot-ops.html',n:'5',t:'營運分析',d:'A/B 與留存'}];
+S.CH=[{f:'slot-par-sheet.html',n:'1',t:'設計',d:'數值規格表'},{f:'slot-verify.html',n:'2',t:'驗證',d:'RNG 與送審'},{f:'slot-player.html',n:'3',t:'玩家體驗',d:'破產與時長'},{f:'slot-monitor.html',n:'4',t:'上線監控',d:'例行報表'},{f:'slot-ops.html',n:'5',t:'營運分析',d:'A/B 與留存'}];
 S.nav=function(el,cur){
   el.innerHTML=S.CH.map(c=>`<a href="${c.f}" class="${c.f===cur?'on':''}" ${c.f===cur?'aria-current="page"':''}><span class="n">${c.n}</span><span><b>${c.t}</b><small>${c.d}</small></span></a>`).join('');
 };

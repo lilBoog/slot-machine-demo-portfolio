@@ -6,7 +6,7 @@
 --   games         各版本的理論值（RTP、單局標準差 sigma、觸發率）
 --   players       玩家：註冊日、VIP 等級、來源管道
 --   spins         每一次付費轉動（win 已含該轉觸發的免費遊戲贏分）
---   config_par    PAR 表規格（輪帶停點數、賠率、免費遊戲設定）
+--   config_par    數值規格表（輪帶停點數、賠率、免費遊戲設定）
 --   config_build  各版本遊戲實際使用的設定（由開發匯出）
 --   v_spins       檢視表：去除重複與錯誤紀錄後的乾淨資料，報表一律用它
 --
@@ -109,7 +109,7 @@ GROUP  BY version
 ORDER  BY MIN(spin_time);
 
 
--- [Q07] 驗收：PAR 表規格 vs 各版本實際設定，列出不一致的參數 ------------
+-- [Q07] 驗收：數值規格表 vs 各版本實際設定，列出不一致的參數 ------------
 SELECT b.version, b.param, p.description,
        p.value AS par_value,
        b.value AS build_value

@@ -90,7 +90,7 @@
   <div class="qa" id="qa-list"></div>
 </section>
 
-<footer>營運資料為模擬生成（示範用虛構機台）。σ 取自 10 萬局校準模擬，對應 PAR 表中的單局標準差。</footer>
+<footer>營運資料為模擬生成（示範用虛構機台）。σ 取自 10 萬局校準模擬，對應 數值規格表中的單局標準差。</footer>
 </div>
 
 <script src="assets/lib.js"></script>
@@ -101,7 +101,7 @@ const {$,num,pct}=PF;
 let ST,A,M,sigma=null,tok=null,seed=2026;const QA={};
 SLOT.nav($('chapters'),'slot-monitor.html');
 function init(){ST=SLOT.load();A=SLOT.banner($('cfg'),ST,init);M=SLOT.machine(ST.cfg);
-  // 校準 σ（PAR 表的單局標準差）
+  // 校準 σ（數值規格表的單局標準差）
   const r=PF.rng(999);let s=0,s2=0;const N=100000;for(let i=0;i<N;i++){const m=M.play(r).win/SLOT.BET;s+=m;s2+=m*m;}sigma=Math.sqrt(s2/N-(s/N)**2);
   renderStatic();run();}
 function renderStatic(){
@@ -150,7 +150,7 @@ function render(days,zt,band,anom,aday,ak){
     ['期間累計 RTP',pct(cw/cb,2),'理論 '+pct(T,2),'hl'],
     ['總轉數',num(cb/SLOT.BET),'總下注 '+num(cb)+' 點'],
     ['莊家淨收入',num(cb-cw)+' 點','佔下注 '+pct(1-cw/cb,2),cb-cw<0?'alert':'good'],
-    ['單局標準差 σ',sigma.toFixed(3),'PAR 表校準值']]);
+    ['單局標準差 σ',sigma.toFixed(3),'數值規格表校準值']]);
   const ys=[...pts.map(p=>p[1]),...up.map(p=>p[1]),...lo.map(p=>p[1]),T-band,T+band];
   PF.chart($('mo-chart'),{label:'每日 RTP',x0:0.4,x1:days.length+0.6,y0:Math.min(...ys)-0.01,y1:Math.max(...ys)+0.01,yFmt:v=>Math.round(v*100)+'%',xStep:days.length>45?10:5,
     series:[{kind:'line',pts:up,stroke:'var(--muted)',sw:1.2},{kind:'line',pts:lo,stroke:'var(--muted)',sw:1.2},{kind:'dots',pts,r:4,op:0.95}],
